@@ -1,37 +1,144 @@
 ---
 id: exercicios-modularizacao-2
 title: Exercícios - Modularização
-sidebar_label: 2. Exerc
+sidebar_label: 2. Exercícios
 sidebar_position: 2
-description: Lista de exercícios práticos e desafios sobre Modularização.
+description: Lista de exercícios de Modularização.
+slug: /fundamentos-programacao/modularizacao-2
 ---
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 ## 🛠 Requisitos e Materiais
 
-1. [Ferramenta / Software / Componente 1]
-2. [Ferramenta / Software / Componente 2]
-3. [Link de arquivo base ou datasheet, se aplicável]
+1. Compilador C++17 (g++ ou equivalente).
+2. Editor de texto ou IDE.
+3. Biblioteca `<string>` quando necessária.
 
 ## 📝 Lista de Exercícios
 
-### Exercício 2: [TÍTULO DO EXERCÍCIO] (Básico)
+### Exercício 91: Exercício 91 (Básico)
 
-**Objetivo:** [Descreva sucintamente o objetivo do exercício.]
+**Objetivo:** Desenvolva um programa que leia dois valores pelo teclado e passe esses valores para uma função `void maior(...)` que vai verificar qual deles é o maior e mostrá-lo na tela. Caso os dois valores sejam iguais, mostrar uma mensagem informando essa característica.
 
-1. [Instrução ou passo 1].
-2. [Instrução ou passo 2].
-3. [Instrução ou passo 3].
+**Enunciado e instruções:**
+
+Desenvolva um programa que leia dois valores pelo teclado e passe esses valores para uma função `void maior(...)` que vai verificar qual deles é o maior e mostrá-lo na tela. Caso os dois valores sejam iguais, mostrar uma mensagem informando essa característica.
 
 :::tip Dica
-[Insira aqui uma dica ou atalho relevante para a solução do problema.]
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
 :::
 
 <details>
 <summary>💡 Ver Resolução / Gabarito</summary>
 
-[Descreva a solução explicada aqui.]
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 92: Exercício 92 (Básico)
+
+**Objetivo:** Crie um programa que leia um número inteiro e passe para uma função `void parOuImpar(int n)` que vai verificar e mostrar na tela se o valor passado como parâmetro é PAR ou ÍMPAR.
+
+**Enunciado e instruções:**
+
+Crie um programa que leia um número inteiro e passe para uma função `void parOuImpar(int n)` que vai verificar e mostrar na tela se o valor passado como parâmetro é PAR ou ÍMPAR.
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 93: Exercício 93 (Básico)
+
+**Objetivo:** Faça um programa que tenha uma função `void contador(int inicio, int fim, int incremento)`. O programa principal deve solicitar a digitação desses valores e passá-los à função, que vai mostrar a contagem na tela.
+
+**Enunciado e instruções:**
+
+Faça um programa que tenha uma função `void contador(int inicio, int fim, int incremento)`. O programa principal deve solicitar a digitação desses valores e passá-los à função, que vai mostrar a contagem na tela.
+Ex.: para início = 4, fim = 20 e incremento = 3, `contador(4, 20, 3)` mostra:
+
+```
+4 >> 7 >> 10 >> 13 >> 16 >> 19 >> FIM
+```
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 94: Exercício 94 (Desafio)
+
+**Objetivo:** **[DESAFIO]** Desenvolva um programa que tenha uma função `void fibonacci(int termos)` que recebe um único valor inteiro como parâmetro, indicando quantos termos da sequência serão mostrados na tela.
+
+**Enunciado e instruções:**
+
+**[DESAFIO]** Desenvolva um programa que tenha uma função `void fibonacci(int termos)` que recebe um único valor inteiro como parâmetro, indicando quantos termos da sequência serão mostrados na tela.
+Obs.: use os exercícios 70 e 75 para ajudar na solução.
+
+```
+fibonacci(5) -> 1 >> 1 >> 2 >> 3 >> 5 >> FIM
+fibonacci(9) -> 1 >> 1 >> 2 >> 3 >> 5 >> 8 >> 13 >> 21 >> 34 >> FIM
+```
+
+---
+
+## Passo 10 — Funções (com retorno)
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 95: Exercício 95 (Básico)
+
+**Objetivo:** Refaça o exercício 90, só que agora em forma de função `somador()`, que vai receber dois parâmetros e vai **retornar** o resultado da soma entre eles para a função `main`.
+
+**Enunciado e instruções:**
+
+Refaça o exercício 90, só que agora em forma de função `somador()`, que vai receber dois parâmetros e vai **retornar** o resultado da soma entre eles para a função `main`.
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
 
 </details>

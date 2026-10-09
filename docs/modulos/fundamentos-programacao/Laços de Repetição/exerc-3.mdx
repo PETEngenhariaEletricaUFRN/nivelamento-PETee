@@ -1,37 +1,293 @@
 ---
 id: exercicios-lacos-de-repeticao-3
 title: Exercícios - Laços de Repetição
-sidebar_label: 3. Exerc
+sidebar_label: 3. Exercícios
 sidebar_position: 3
-description: Lista de exercícios práticos e desafios sobre Laços de Repetição.
+description: Lista de exercícios de Laços de Repetição.
+slug: /fundamentos-programacao/lacos-de-repeticao-3
 ---
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 ## 🛠 Requisitos e Materiais
 
-1. [Ferramenta / Software / Componente 1]
-2. [Ferramenta / Software / Componente 2]
-3. [Link de arquivo base ou datasheet, se aplicável]
+1. Compilador C++17 (g++ ou equivalente).
+2. Editor de texto ou IDE.
+3. Biblioteca `<random>` para exercícios de sorteio.
 
 ## 📝 Lista de Exercícios
 
-### Exercício 3: [TÍTULO DO EXERCÍCIO] (Básico)
+### Exercício 61: Exercício 61 (Básico)
 
-**Objetivo:** [Descreva sucintamente o objetivo do exercício.]
+**Objetivo:** Crie um programa que mostre na tela a seguinte contagem, usando a estrutura `do-while`:
 
-1. [Instrução ou passo 1].
-2. [Instrução ou passo 2].
-3. [Instrução ou passo 3].
+**Enunciado e instruções:**
+
+Crie um programa que mostre na tela a seguinte contagem, usando a estrutura `do-while`:
+
+```
+0 3 6 9 12 15 18 21 24 27 30 Acabou!
+```
 
 :::tip Dica
-[Insira aqui uma dica ou atalho relevante para a solução do problema.]
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
 :::
 
 <details>
 <summary>💡 Ver Resolução / Gabarito</summary>
 
-[Descreva a solução explicada aqui.]
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 62: Exercício 62 (Básico)
+
+**Objetivo:** Faça um programa usando `do-while` que leia a idade de várias pessoas. A cada laço, você deverá perguntar para o usuário se ele quer ou não continuar a digitar dados. No final, quando o usuário decidir parar, mostre na tela:
+
+**Enunciado e instruções:**
+
+Faça um programa usando `do-while` que leia a idade de várias pessoas. A cada laço, você deverá perguntar para o usuário se ele quer ou não continuar a digitar dados. No final, quando o usuário decidir parar, mostre na tela:
+- a) Quantas idades foram digitadas
+- b) Qual é a média entre as idades digitadas
+- c) Quantas pessoas têm 21 anos ou mais
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 63: Exercício 63 (Básico)
+
+**Objetivo:** Crie um programa usando `do-while` que leia vários números. A cada laço, pergunte se o usuário quer continuar ou não. No final, mostre na tela:
+
+**Enunciado e instruções:**
+
+Crie um programa usando `do-while` que leia vários números. A cada laço, pergunte se o usuário quer continuar ou não. No final, mostre na tela:
+- a) O somatório entre todos os valores
+- b) Qual foi o menor valor digitado
+- c) A média entre todos os valores
+- d) Quantos valores são pares
+
+---
+
+## Passo 07 — Repetição com `for`
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 64: Exercício 64 (Básico)
+
+**Objetivo:** Desenvolva um programa usando `for` que mostre na tela a seguinte contagem:
+
+**Enunciado e instruções:**
+
+Desenvolva um programa usando `for` que mostre na tela a seguinte contagem:
+
+```
+0 5 10 15 20 25 30 35 40 Acabou!
+```
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 65: Exercício 65 (Básico)
+
+**Objetivo:** Desenvolva um programa usando `for` que mostre na tela a seguinte contagem:
+
+**Enunciado e instruções:**
+
+Desenvolva um programa usando `for` que mostre na tela a seguinte contagem:
+
+```
+100 90 80 70 60 50 40 30 20 10 0 Acabou!
+```
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 66: Exercício 66 (Básico)
+
+**Objetivo:** Escreva um programa que leia um número qualquer e mostre a tabuada desse número, usando `for`.
+
+**Enunciado e instruções:**
+
+Escreva um programa que leia um número qualquer e mostre a tabuada desse número, usando `for`.
+
+```
+Digite um valor: 5
+5 x 1 = 5
+5 x 2 = 10
+5 x 3 = 15 ...
+```
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 67: Exercício 67 (Básico)
+
+**Objetivo:** Faça um programa usando `for` que leia um número inteiro positivo e mostre na tela uma contagem de 0 até o valor digitado:
+
+**Enunciado e instruções:**
+
+Faça um programa usando `for` que leia um número inteiro positivo e mostre na tela uma contagem de 0 até o valor digitado:
+
+```
+Digite um valor: 9
+Contagem: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, FIM!
+```
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 68: Exercício 68 (Básico)
+
+**Objetivo:** Crie um programa que leia sexo e peso de 8 pessoas, usando `for`. No final, mostre na tela:
+
+**Enunciado e instruções:**
+
+Crie um programa que leia sexo e peso de 8 pessoas, usando `for`. No final, mostre na tela:
+- a) Quantas mulheres foram cadastradas
+- b) Quantos homens pesam mais de 100 Kg
+- c) A média de peso entre as mulheres
+- d) O maior peso entre os homens
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 69: Exercício 69 (Desafio)
+
+**Objetivo:** **[DESAFIO]** Desenvolva um programa que leia o primeiro termo e a razão de uma PA (Progressão Aritmética), mostrando na tela os 10 primeiros elementos da PA e a soma entre todos os valores da sequência.
+
+**Enunciado e instruções:**
+
+**[DESAFIO]** Desenvolva um programa que leia o primeiro termo e a razão de uma PA (Progressão Aritmética), mostrando na tela os 10 primeiros elementos da PA e a soma entre todos os valores da sequência.
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
+
+</details>
+
+---
+
+### Exercício 70: Exercício 70 (Desafio)
+
+**Objetivo:** **[DESAFIO]** Faça um programa que mostre os 10 primeiros elementos da Sequência de Fibonacci:
+
+**Enunciado e instruções:**
+
+**[DESAFIO]** Faça um programa que mostre os 10 primeiros elementos da Sequência de Fibonacci:
+
+```
+1 1 2 3 5 8 13 21 ...
+```
+
+---
+
+## Passo 08 — Vetores (`std::vector` / arrays)
+
+Use `std::vector<int>`, `std::vector<double>` ou `std::vector<std::string>`, ou arrays de tamanho fixo (`int v[8];`) se preferir. Lembre-se: os índices em C++ começam em 0.
+
+:::tip Dica
+
+Quebre o problema em etapas, teste casos simples e compile com `g++ -std=c++17 -Wall -Wextra`.
+
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Implemente o programa em C++ e registre aqui sua solução após validar os casos de teste.
 
 </details>
