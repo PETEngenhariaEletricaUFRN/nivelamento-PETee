@@ -1,0 +1,239 @@
+---
+id: exercicios-condicionais-if
+title: Condicionais simples (if)
+sidebar_label: 1. Condicionais simples (if)
+sidebar_position: 1
+description: Exercícios de condicionais simples com if.
+slug: /fundamentos-programacao/condicionais-if
+---
+
+## 🛠 Requisitos e Materiais
+
+1. IDE C++ Online/Local
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Multa por Excesso de Velocidade
+
+**Objetivo:** Escreva um programa que pergunte a velocidade de um carro. Caso ultrapasse 80 Km/h, exiba uma mensagem dizendo que o usuário foi multado. Nesse caso, exiba o valor da multa, cobrando R$5 por cada Km acima da velocidade permitida.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double v;
+    cout << "Digite a velocidade do carro em Km/h: ";
+    cin >> v;
+    if (v > 80)
+        cout << "Multado: R$" << (v - 80) * 5;
+    else
+        cout << "Sem multa.";
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Direito ao Voto
+
+**Objetivo:** Faça um programa que leia o ano de nascimento de uma pessoa, calcule a idade dela e depois mostre se ela pode ou não votar.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    int n, a;
+    cout << "Digite o ano de nascimento e o ano atual: ";
+    cin >> n >> a;
+    int i = a - n;
+    if (i >= 16)
+        cout << "Pode votar.";
+    else
+        cout << "Nao pode votar.";
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Aproveitamento do Aluno
+
+**Objetivo:** Crie um programa que leia o nome e as duas notas de um aluno, calcule a sua média e mostre na tela. No final, analise a média e mostre se o aluno teve ou não um bom aproveitamento (média igual ou acima de 7.0).
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+int main()
+{
+    string n;
+    double a, b;
+    cout << "Digite o nome do aluno: ";
+    getline(cin, n);
+    cout << "Digite as duas notas: ";
+    cin >> a >>b;
+    double m = (a+b)/2;
+    cout << n << " " << m << " ";
+    if (m >= 7)
+        cout << "Bom aproveitamento.";
+    else
+        cout << "Precisa melhorar.";
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Número Par ou Ímpar
+
+**Objetivo:** Desenvolva um programa que leia um número inteiro e mostre se ele é PAR ou ÍMPAR (use o operador `%`).
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    int n;
+    cout << "Digite um número inteiro: ";
+    cin >> n;
+    if (n % 2 == 0)
+        cout << "PAR";
+    else
+        cout << "IMPAR";
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Ano Bissexto
+
+**Objetivo:** Faça um programa que leia um determinado ano e mostre se ele é ou não BISSEXTO.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    int a;
+    cout << "Digite um ano: ";
+    cin >> a;
+    if (a % 400 == 0 || (a % 4 == 0 && a % 100 != 0))
+        cout << "BISSEXTO";
+    else
+        cout << "NAO BISSEXTO";
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Desconto por Gênero
+
+**Objetivo:** Numa promoção exclusiva para o Dia da Mulher, uma loja quer dar descontos para todos, mas especialmente para mulheres. Faça um programa que leia nome, sexo (`'M'` ou `'F'`) e o valor das compras do cliente e calcule o preço com desconto, sabendo que:
+- Homens ganham 5% de desconto
+- Mulheres ganham 13% de desconto
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+int main()
+{
+    string n;
+    char s;
+    double v;
+    cout << "Digite o nome do cliente: ";
+    getline(cin, n);
+    cout << "Digite o sexo (M/F) e o valor da compra: ";
+    cin >> s >>v;
+    double d;
+    if (s == 'F' || s == 'f')
+        d = 0.13;
+    else
+        d = 0.05;
+    cout << n <<" R$" <<v*(1-d);
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Preço da Passagem
+
+**Objetivo:** Faça um programa que pergunte a distância que um passageiro deseja percorrer em Km. Calcule o preço da passagem, cobrando R\$0,50 por Km para viagens até 200 Km e R\$0,45 por Km para viagens mais longas.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double k;
+    cout << "Digite a distância da viagem em Km: ";
+    cin >> k;
+    double preco;
+    if (k <= 200)
+        preco = k * 0.50;
+    else
+        preco = k * 0.45;
+    cout << "R$" << preco;
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Formação de Triângulo
+
+**Objetivo:** Crie um programa que leia o tamanho de três segmentos de reta. Analise seus comprimentos e diga se é possível formar um triângulo com essas retas. Matematicamente, para três segmentos formarem um triângulo, o comprimento de cada lado deve ser menor que a soma dos outros dois.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double a, b, c;
+    cout << "Digite os três lados do triângulo: ";
+    cin >> a >> b >> c;
+    if (a > 0 && b > 0 && c > 0 && a < b + c && b < a + c && c < a + b)
+        cout << "Forma triangulo.";
+    else
+        cout << "Nao forma triangulo.";
+}
+```
+
+</details>
+

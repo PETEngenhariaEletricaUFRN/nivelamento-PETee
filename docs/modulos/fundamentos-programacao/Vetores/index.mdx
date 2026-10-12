@@ -4,8 +4,412 @@ slug: /fundamentos-programacao/vetores
 
 # Vetores
 
-Exercícios sobre declaração, acesso e manipulação de vetores.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+1. IDE C++ Online/Local
 
-Adicione aqui os exercícios deste submódulo.
+## 📝 Lista de Exercícios
+
+### Exercício 1: Sequência de múltiplos de cinco 
+
+**Objetivo:** Preencha automaticamente, usando lógica, um vetor numérico com 10 posições com os valores `5, 10, 15, ..., 50`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 10;
+    int vetor[tamanho];
+
+    for (int i = 0; i < tamanho; ++i) {
+        vetor[i] = (i + 1) * 5;
+    }
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << vetor[i] << ' ';
+    }
+    cout << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Alternância de valores no vetor 
+
+**Objetivo:** Preencha automaticamente, usando lógica, um vetor numérico com 10 posições alternando os valores `5` e `3`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 10;
+    int vetor[tamanho];
+
+    for (int i = 0; i < tamanho; ++i) {
+        vetor[i] = (i % 2 == 0) ? 5 : 3;
+    }
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << vetor[i] << ' ';
+    }
+    cout << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Sequência de Fibonacci em um vetor 
+
+**Objetivo:** Preencha automaticamente, usando lógica, um vetor com 16 posições contendo os primeiros elementos da sequência de Fibonacci iniciada por `1, 1`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 16;
+    int vetor[tamanho] = {1, 1};
+
+    for (int i = 2; i < tamanho; ++i) {
+        vetor[i] = vetor[i - 1] + vetor[i - 2];
+    }
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << vetor[i] << ' ';
+    }
+    cout << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Geração de números aleatórios 
+
+**Objetivo:** Preencha automaticamente um vetor numérico com 7 números gerados aleatoriamente pelo computador e mostre os valores na tela.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <random>
+using namespace std;
+
+int main() {
+    const int tamanho = 7;
+    int vetor[tamanho];
+    random_device semente;
+    mt19937 gerador(semente());
+    uniform_int_distribution<int> distribuicao(0, 99);
+
+    for (int i = 0; i < tamanho; ++i) {
+        vetor[i] = distribuicao(gerador); 
+    }
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << vetor[i] << ' ';
+    }
+    cout << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Nomes em ordem inversa 
+
+**Objetivo:** Leia 7 nomes de pessoas, guarde-os em um vetor de `string` e mostre os nomes na ordem inversa àquela em que foram informados.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    const int tamanho = 7;
+    string nomes[tamanho];
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << "Digite o nome da pessoa " << i + 1 << ": ";
+        getline(cin >> ws, nomes[i]);
+    }
+
+    for (int i = tamanho - 1; i >= 0; --i) {
+        cout << nomes[i] << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Localização de múltiplos de dez 
+
+**Objetivo:** Leia 15 números, mostre o vetor completo e informe as posições que armazenam valores múltiplos de 10.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 15;
+    int vetor[tamanho];
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << "Digite o numero " << i + 1 << ": ";
+        cin >> vetor[i];
+    }
+
+    cout << "Vetor: ";
+    for (int i = 0; i < tamanho; ++i) {
+        cout << vetor[i] << ' ';
+    }
+
+    cout << "\nPosicoes dos multiplos de 10: ";
+    for (int i = 0; i < tamanho; ++i) {
+        if (vetor[i] % 10 == 0) {
+            cout << i << ' ';
+        }
+    }
+    cout << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Números pares e suas posições 
+
+**Objetivo:** Leia 10 números inteiros e mostre quais são pares e em que posições estão armazenados.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 10;
+    int vetor[tamanho];
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << "Digite o numero " << i + 1 << ": ";
+        cin >> vetor[i];
+    }
+
+    for (int i = 0; i < tamanho; ++i) {
+        if (vetor[i] % 2 == 0) {
+            cout << "Valor " << vetor[i] << " na posicao " << i << '\n';
+        }
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Busca de uma chave em valores sorteados 
+
+**Objetivo:** Preencha um vetor de 30 posições com números entre 1 e 15 sorteados pelo computador. Leia uma chave e mostre as posições em que ela foi encontrada e quantas vezes apareceu.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <random>
+using namespace std;
+
+int main() {
+    const int tamanho = 30;
+    int vetor[tamanho];
+    random_device semente;
+    mt19937 gerador(semente());
+    uniform_int_distribution<int> distribuicao(1, 15);
+
+    for (int i = 0; i < tamanho; ++i) {
+        vetor[i] = distribuicao(gerador);
+    }
+
+    int chave;
+    cout << "Digite a chave que deseja procurar: ";
+    cin >> chave;
+
+    int ocorrencias = 0;
+    cout << "Posicoes: ";
+    for (int i = 0; i < tamanho; ++i) {
+        if (vetor[i] == chave) {
+            cout << i << ' ';
+            ++ocorrencias;
+        }
+    }
+    cout << "\nQuantidade: " << ocorrencias << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Estatísticas de idades 
+
+**Objetivo:** Leia a idade de 8 pessoas e mostre a média das idades, as posições com pessoas acima de 25 anos, a maior idade e as posições em que ela aparece.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 8;
+    int idades[tamanho];
+    int soma = 0;
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << "Digite a idade da pessoa " << i + 1 << ": ";
+        cin >> idades[i];
+        soma += idades[i];
+    }
+
+    int maior = idades[0];
+    for (int idade : idades) {
+        if (idade > maior) {
+            maior = idade;
+        }
+    }
+
+    cout << "Media: " << static_cast<double>(soma) / tamanho << '\n';
+    cout << "Acima de 25 anos: ";
+    for (int i = 0; i < tamanho; ++i) {
+        if (idades[i] > 25) {
+            cout << i << ' ';
+        }
+    }
+
+    cout << "\nMaior idade: " << maior << "\nPosicoes da maior idade: ";
+    for (int i = 0; i < tamanho; ++i) {
+        if (idades[i] == maior) {
+            cout << i << ' ';
+        }
+    }
+    cout << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 10: Ordenação crescente de números aleatórios 
+
+**Objetivo:** Preencha um vetor de 20 posições com números aleatórios entre 0 e 99, mostre os valores gerados e ordene o vetor em ordem crescente implementando Bubble Sort ou Selection Sort.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <random>
+using namespace std;
+
+int main() {
+    const int tamanho = 20;
+    int vetor[tamanho];
+    random_device semente;
+    mt19937 gerador(semente());
+    uniform_int_distribution<int> distribuicao(0, 99);
+
+    for (int i = 0; i < tamanho; ++i) {
+        vetor[i] = distribuicao(gerador);
+    }
+
+    cout << "Original: ";
+    for (int valor : vetor) {
+        cout << valor << ' ';
+    }
+
+    for (int fim = tamanho - 1; fim > 0; --fim) {
+        for (int i = 0; i < fim; ++i) {
+            if (vetor[i] > vetor[i + 1]) {
+                int temporario = vetor[i];
+                vetor[i] = vetor[i + 1];
+                vetor[i + 1] = temporario;
+            }
+        }
+    }
+
+    cout << "\nOrdenado: ";
+    for (int valor : vetor) {
+        cout << valor << ' ';
+    }
+    cout << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 11: Cadastro de menores de idade 
+
+**Objetivo:** Leia o nome e a idade de 9 pessoas, guardando os dados em dois vetores relacionados, e mostre apenas as pessoas menores de idade.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    const int tamanho = 9;
+    string nomes[tamanho];
+    int idades[tamanho];
+
+    for (int i = 0; i < tamanho; ++i) {
+        cout << "Digite o nome da pessoa " << i + 1 << ": ";
+        getline(cin >> ws, nomes[i]);
+        cout << "Digite a idade de " << nomes[i] << ": ";
+        cin >> idades[i];
+    }
+
+    for (int i = 0; i < tamanho; ++i) {
+        if (idades[i] < 18) {
+            cout << nomes[i] << " - " << idades[i] << " anos\n";
+        }
+    }
+}
+```
+
+</details>

@@ -1,0 +1,307 @@
+---
+sidebar_position: 1
+slug: /fundamentos-programacao/ponteiros
+---
+
+# Ponteiros
+
+## 🛠 Requisitos e Materiais
+
+1. IDE C++ Online/Local
+
+## 📝 Lista de exercícios
+
+### Exercício 1: Endereço e valor 
+
+**Objetivo:** Declare um inteiro, atribua um valor a ele e crie um ponteiro para essa variável. Mostre o valor da variável, seu endereço e o valor armazenado no ponteiro.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int numero = 42;
+    int* ponteiro = &numero;
+    cout << "Valor da variável: " << numero << '\n';
+    cout << "Endereço da variável: " << &numero << '\n';
+    cout << "Endereço armazenado no ponteiro: " << ponteiro << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Alteração por desreferenciação 
+
+**Objetivo:** Leia um inteiro e use somente um ponteiro para dobrar o valor da variável. Mostre o resultado pela variável original.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int numero;
+    cout << "Digite um número inteiro para dobrar: ";
+    cin >> numero;
+    int* p = &numero;
+    *p *= 2;
+    cout << "O dobro do número é: " << numero << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Ponteiro nulo 
+
+**Objetivo:** Crie um ponteiro inicialmente nulo. Antes de desreferenciá-lo, verifique se ele aponta para uma variável; caso contrário, mostre uma mensagem adequada.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int* p = nullptr;
+    if (p == nullptr) {
+        cout << "O ponteiro foi criado sem um destino.\n";
+    }
+
+    int valor = 10;
+    p = &valor;
+    if (p != nullptr) {
+        cout << "Depois de receber um endereço, o valor é: " << *p << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Troca usando ponteiros 
+
+**Objetivo:** Implemente uma função para trocar dois inteiros sem retornar valores. A `main` deve ler, trocar e mostrar os números.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void trocar(int* a, int* b) {
+    int aux = *a;
+    *a = *b;
+    *b = aux;
+}
+
+int main() {
+    int a, b;
+    cout << "Digite dois números inteiros para trocar: ";
+    cin >> a >> b;
+    trocar(&a, &b);
+    cout << "Após a troca, o primeiro número é " << a
+         << " e o segundo é " << b << ".\n";
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Percorrendo um vetor 
+
+**Objetivo:** Leia cinco inteiros e calcule a soma percorrendo o vetor com aritmética de ponteiros, sem usar índices.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int valores[5];
+    cout << "Digite cinco números inteiros: ";
+    for (int* p = valores; p < valores + 5; ++p) {
+        cin >> *p;
+    }
+
+    int soma = 0;
+    for (int* p = valores; p < valores + 5; ++p)
+        soma += *p;
+    cout << "A soma dos valores é: " << soma << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Maior elemento por endereço 
+
+**Objetivo:** Implemente uma função para retornar o endereço do maior elemento de um intervalo de vetor. Mostre o valor retornado.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int* maior(int* inicio, int* fim) {
+    int* resultado = inicio;
+    for (int* p = inicio + 1; p < fim; ++p)
+        if (*p > *resultado) resultado = p;
+    return resultado;
+}
+
+int main() {
+    int valores[] = {7, 2, 9, 4, 6};
+    cout << "O maior elemento do vetor é: "
+         << *maior(valores, valores + 5) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Ponteiro para ponteiro 
+
+**Objetivo:** Declare um inteiro, um ponteiro para ele e um ponteiro para o primeiro ponteiro. Altere o inteiro usando `**pp` e imprima os três níveis envolvidos.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int valor = 5;
+    int* p = &valor;
+    int** pp = &p;
+    **pp = 25;
+    cout << "Valor pela variável: " << valor << '\n';
+    cout << "Valor pelo primeiro ponteiro: " << *p << '\n';
+    cout << "Valor pelo ponteiro para ponteiro: " << **pp << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Alocação dinâmica 
+
+**Objetivo:** Leia a quantidade de notas, aloque um vetor dinamicamente com `new`, calcule a média e libere a memória com `delete[]`. Trate uma quantidade inválida.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int quantidade;
+    cout << "Quantas notas serão cadastradas? ";
+    cin >> quantidade;
+    if (quantidade <= 0) {
+        cout << "A quantidade deve ser maior que zero.\n";
+        return 1;
+    }
+
+    double* notas = new double[quantidade];
+    double soma = 0;
+    cout << "Digite as " << quantidade << " notas: ";
+    for (double* p = notas; p < notas + quantidade; ++p) {
+        cin >> *p;
+        soma += *p;
+    }
+    cout << "A média das notas é: " << soma / quantidade << '\n';
+    delete[] notas;
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Constância de ponteiros (Avançado)
+
+**Objetivo:** Reescreva uma função que recebe um vetor somente para leitura usando `const int*`. Explique, em comentário, por que a função não pode modificar os elementos nem fazer o ponteiro apontar para outra posição.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int soma(const int* inicio, const int* fim) {
+    int resultado = 0;
+    for (const int* p = inicio; p != fim; ++p)
+        resultado += *p;
+    return resultado;
+}
+
+int main() {
+    const int valores[] = {3, 8, 4};
+    cout << "Como os valores são constantes, a função apenas os consulta.\n";
+    cout << "A soma dos valores é: " << soma(valores, valores + 3) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 10: Ordenação com função de comparação
+
+**Objetivo:** Faça uma função que receba um vetor, seu tamanho e um ponteiro para função de comparação. Use-a para ordenar o vetor em ordem crescente e depois decrescente, sem duplicar o algoritmo de ordenação.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+bool crescente(int a, int b) { return a > b; }
+bool decrescente(int a, int b) { return a < b; }
+
+void ordenar(int* v, int n, bool (*deveTrocar)(int, int)) {
+    for (int* fim = v + n - 1; fim > v; --fim)
+        for (int* p = v; p < fim; ++p)
+            if (deveTrocar(*p, *(p + 1)))
+                swap(*p, *(p + 1));
+}
+
+int main() {
+    int valores[] = {4, 1, 7, 2};
+    cout << "Vetor original: 4 1 7 2\n";
+    ordenar(valores, 4, crescente);
+    cout << "Ordenação crescente: ";
+    for (int* p = valores; p < valores + 4; ++p) cout << *p << ' ';
+    cout << '\n';
+    ordenar(valores, 4, decrescente);
+    cout << "Ordenação decrescente: ";
+    for (int* p = valores; p < valores + 4; ++p) cout << *p << ' ';
+    cout << '\n';
+}
+```
+
+</details>

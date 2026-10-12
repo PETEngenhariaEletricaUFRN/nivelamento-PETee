@@ -4,8 +4,613 @@ slug: /fundamentos-programacao/poo
 
 # Programação Orientada a Objetos
 
-Exercícios sobre classes, objetos e os fundamentos da programação orientada a objetos.
 
-## Exercícios
+## 🛠 Requisitos e Materiais
 
-Adicione aqui os exercícios deste submódulo.
+1. IDE C++ Online/Local
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Classe Livro 
+
+**Objetivo:** Crie uma classe `Livro` com título, autor e ano de publicação.
+Instancie um objeto e implemente um método para exibir seus dados.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**livro.h**
+
+```cpp
+#ifndef LIVRO_H
+#define LIVRO_H
+
+#include <string>
+using namespace std;
+
+class Livro {
+private:
+    string titulo;
+    string autor;
+    int ano;
+
+public:
+    Livro(string titulo, string autor, int ano);
+    void mostrar() const;
+};
+
+#endif
+```
+
+**livro.cpp**
+
+```cpp
+#include "livro.h"
+#include <iostream>
+using namespace std;
+
+Livro::Livro(string titulo, string autor, int ano)
+    : titulo(titulo), autor(autor), ano(ano) {}
+
+void Livro::mostrar() const {
+    cout << titulo << " - " << autor << " (" << ano << ")\n";
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "livro.h"
+using namespace std;
+
+int main() {
+    Livro livro("O Hobbit", "J. R. R. Tolkien", 1937);
+    livro.mostrar();
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Conta bancária e encapsulamento 
+
+**Objetivo:** Crie uma classe `Conta` com titular e saldo privados. Implemente
+construtor, consulta de saldo, depósito e saque. O saque não pode ultrapassar
+o saldo disponível e os métodos devem proteger os atributos internos.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**conta.h**
+
+```cpp
+#ifndef CONTA_H
+#define CONTA_H
+
+#include <string>
+using namespace std;
+
+class Conta {
+private:
+    string titular;
+    double saldo;
+
+public:
+    Conta(string titular, double saldoInicial);
+    bool depositar(double valor);
+    bool sacar(double valor);
+    double getSaldo() const;
+    void mostrar() const;
+};
+
+#endif
+```
+
+**conta.cpp**
+
+```cpp
+#include "conta.h"
+#include <iostream>
+using namespace std;
+
+Conta::Conta(string titular, double saldoInicial)
+    : titular(titular), saldo(saldoInicial >= 0 ? saldoInicial : 0) {}
+
+bool Conta::depositar(double valor) {
+    if (valor <= 0) return false;
+    saldo += valor;
+    return true;
+}
+
+bool Conta::sacar(double valor) {
+    if (valor <= 0 || valor > saldo) return false;
+    saldo -= valor;
+    return true;
+}
+
+double Conta::getSaldo() const {
+    return saldo;
+}
+
+void Conta::mostrar() const {
+    cout << titular << " - Saldo: R$ " << saldo << '\n';
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "conta.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    string titular;
+    double saldo, deposito, saque;
+    cout << "Titular: ";
+    getline(cin, titular);
+    cout << "Saldo inicial: ";
+    cin >> saldo;
+    Conta conta(titular, saldo);
+    cout << "Deposito: ";
+    cin >> deposito;
+    cout << "Saque: ";
+    cin >> saque;
+
+    if (!conta.depositar(deposito)) cout << "Deposito invalido.\n";
+    if (!conta.sacar(saque)) cout << "Saque invalido ou saldo insuficiente.\n";
+    conta.mostrar();
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Construtores e métodos de Produto 
+
+**Objetivo:** Crie uma classe `Produto` com construtor, getters e método para
+aplicar desconto. Cadastre o produto, aplique um percentual informado e
+mostre o preço atualizado.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**produto.h**
+
+```cpp
+#ifndef PRODUTO_H
+#define PRODUTO_H
+
+#include <string>
+using namespace std;
+
+class Produto {
+private:
+    string nome;
+    double preco;
+
+public:
+    Produto(string nome, double preco);
+    bool aplicarDesconto(double percentual);
+    string getNome() const;
+    double getPreco() const;
+};
+
+#endif
+```
+
+**produto.cpp**
+
+```cpp
+#include "produto.h"
+
+Produto::Produto(string nome, double preco)
+    : nome(nome), preco(preco >= 0 ? preco : 0) {}
+
+bool Produto::aplicarDesconto(double percentual) {
+    if (percentual < 0 || percentual > 100) return false;
+    preco *= 1 - percentual / 100;
+    return true;
+}
+
+string Produto::getNome() const {
+    return nome;
+}
+
+double Produto::getPreco() const {
+    return preco;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "produto.h"
+#include <iomanip>
+#include <iostream>
+using namespace std;
+
+int main() {
+    string nome;
+    double preco, desconto;
+    cout << "Nome: ";
+    getline(cin, nome);
+    cout << "Preco: ";
+    cin >> preco;
+    cout << "Desconto (%): ";
+    cin >> desconto;
+
+    Produto produto(nome, preco);
+    if (!produto.aplicarDesconto(desconto)) {
+        cout << "Percentual invalido.\n";
+        return 0;
+    }
+    cout << fixed << setprecision(2);
+    cout << produto.getNome() << ": R$ " << produto.getPreco() << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Aluno e métodos de classe 
+
+**Objetivo:** Crie uma classe `Aluno` que armazene três notas em um array
+privado. Implemente métodos para calcular a média e informar a situação do
+aluno. A classe deve manter os dados protegidos e validar as notas.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**aluno.h**
+
+```cpp
+#ifndef ALUNO_H
+#define ALUNO_H
+
+#include <string>
+using namespace std;
+
+class Aluno {
+private:
+    string nome;
+    double notas[3];
+
+public:
+    Aluno(string nome);
+    bool definirNota(int indice, double nota);
+    double media() const;
+    string situacao() const;
+};
+
+#endif
+```
+
+**aluno.cpp**
+
+```cpp
+#include "aluno.h"
+
+Aluno::Aluno(string nome) : nome(nome), notas{0, 0, 0} {}
+
+bool Aluno::definirNota(int indice, double nota) {
+    if (indice < 0 || indice >= 3 || nota < 0 || nota > 10) return false;
+    notas[indice] = nota;
+    return true;
+}
+
+double Aluno::media() const {
+    return (notas[0] + notas[1] + notas[2]) / 3;
+}
+
+string Aluno::situacao() const {
+    return media() >= 7 ? "Aprovado" : "Reprovado";
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "aluno.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    string nome;
+    cout << "Nome: ";
+    getline(cin, nome);
+    Aluno aluno(nome);
+
+    for (int i = 0; i < 3; ++i) {
+        double nota;
+        cout << "Nota " << i + 1 << ": ";
+        cin >> nota;
+        if (!aluno.definirNota(i, nota)) {
+            cout << "Nota invalida.\n";
+            return 0;
+        }
+    }
+    cout << "Media: " << aluno.media() << '\n';
+    cout << "Situacao: " << aluno.situacao() << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Composição com Pessoa e Endereço 
+
+**Objetivo:** Crie uma classe `Endereco` e utilize um objeto dela como
+atributo privado de uma classe `Pessoa`. O programa deve cadastrar e exibir
+uma pessoa com seu endereço completo.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**endereco.h**
+
+```cpp
+#ifndef ENDERECO_H
+#define ENDERECO_H
+
+#include <string>
+using namespace std;
+
+class Endereco {
+private:
+    string rua;
+    int numero;
+    string cidade;
+
+public:
+    Endereco(string rua, int numero, string cidade);
+    string formatar() const;
+};
+
+#endif
+```
+
+**endereco.cpp**
+
+```cpp
+#include "endereco.h"
+
+Endereco::Endereco(string rua, int numero, string cidade)
+    : rua(rua), numero(numero), cidade(cidade) {}
+
+string Endereco::formatar() const {
+    return rua + ", " + to_string(numero) + " - " + cidade;
+}
+```
+
+**pessoa.h**
+
+```cpp
+#ifndef PESSOA_H
+#define PESSOA_H
+
+#include "endereco.h"
+#include <string>
+using namespace std;
+
+class Pessoa {
+private:
+    string nome;
+    Endereco endereco;
+
+public:
+    Pessoa(string nome, Endereco endereco);
+    void mostrar() const;
+};
+
+#endif
+```
+
+**pessoa.cpp**
+
+```cpp
+#include "pessoa.h"
+#include <iostream>
+using namespace std;
+
+Pessoa::Pessoa(string nome, Endereco endereco)
+    : nome(nome), endereco(endereco) {}
+
+void Pessoa::mostrar() const {
+    cout << nome << '\n' << endereco.formatar() << '\n';
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "pessoa.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    string nome, rua, cidade;
+    int numero;
+    cout << "Nome: ";
+    getline(cin, nome);
+    cout << "Rua: ";
+    getline(cin, rua);
+    cout << "Numero: ";
+    cin >> numero;
+    cin.ignore();
+    cout << "Cidade: ";
+    getline(cin, cidade);
+
+    Endereco endereco(rua, numero, cidade);
+    Pessoa pessoa(nome, endereco);
+    pessoa.mostrar();
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Herança entre funcionários 
+
+**Objetivo:** Crie uma classe base `Funcionario` e uma classe derivada
+`Gerente`. A classe derivada deve acrescentar um bônus ao cálculo do salário,
+reaproveitando os atributos protegidos da classe base.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**funcionario.h**
+
+```cpp
+#ifndef FUNCIONARIO_H
+#define FUNCIONARIO_H
+
+#include <string>
+using namespace std;
+
+class Funcionario {
+protected:
+    string nome;
+    double salario;
+
+public:
+    Funcionario(string nome, double salario);
+    virtual double salarioFinal() const;
+    virtual void mostrar() const;
+    virtual ~Funcionario() = default;
+};
+
+class Gerente : public Funcionario {
+private:
+    double bonus;
+
+public:
+    Gerente(string nome, double salario, double bonus);
+    double salarioFinal() const override;
+    void mostrar() const override;
+};
+
+#endif
+```
+
+**funcionario.cpp**
+
+```cpp
+#include "funcionario.h"
+#include <iostream>
+using namespace std;
+
+Funcionario::Funcionario(string nome, double salario)
+    : nome(nome), salario(salario) {}
+
+double Funcionario::salarioFinal() const {
+    return salario;
+}
+
+void Funcionario::mostrar() const {
+    cout << nome << " - R$ " << salarioFinal() << '\n';
+}
+
+Gerente::Gerente(string nome, double salario, double bonus)
+    : Funcionario(nome, salario), bonus(bonus) {}
+
+double Gerente::salarioFinal() const {
+    return salario + bonus;
+}
+
+void Gerente::mostrar() const {
+    cout << "Gerente: " << nome << " - R$ " << salarioFinal() << '\n';
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "funcionario.h"
+using namespace std;
+
+int main() {
+    Funcionario funcionario("Ana", 2500);
+    Gerente gerente("Carlos", 4000, 1200);
+    funcionario.mostrar();
+    gerente.mostrar();
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Polimorfismo com animais 
+
+**Objetivo:** Crie uma classe base `Animal` com um método virtual `emitirSom`
+e implemente as classes `Cachorro` e `Gato`. Use ponteiros para a classe base
+e observe o comportamento polimórfico.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**animal.h**
+
+```cpp
+#ifndef ANIMAL_H
+#define ANIMAL_H
+
+class Animal {
+public:
+    virtual void emitirSom() const = 0;
+    virtual ~Animal() = default;
+};
+
+class Cachorro : public Animal {
+public:
+    void emitirSom() const override;
+};
+
+class Gato : public Animal {
+public:
+    void emitirSom() const override;
+};
+
+#endif
+```
+
+**animal.cpp**
+
+```cpp
+#include "animal.h"
+#include <iostream>
+using namespace std;
+
+void Cachorro::emitirSom() const {
+    cout << "Cachorro: au au!\n";
+}
+
+void Gato::emitirSom() const {
+    cout << "Gato: miau!\n";
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "animal.h"
+using namespace std;
+
+int main() {
+    Cachorro cachorro;
+    Gato gato;
+    Animal* animais[2] = {&cachorro, &gato};
+
+    for (Animal* animal : animais) {
+        animal->emitirSom();
+    }
+}
+```
+
+</details>

@@ -6,6 +6,333 @@ slug: /fundamentos-programacao/codigos-com-logica-simples
 
 Exercícios introdutórios de lógica de programação e resolução de problemas.
 
-## Exercícios
+## 🛠 Requisitos e Materiais
 
-Adicione aqui os exercícios deste submódulo.
+1. IDE C++ online/Local
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Olá, Mundo!
+
+**Objetivo:** Escreva um programa em C++ que mostre na tela a mensagem `Olá, Mundo!`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Olá, Mundo!\n";
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Mensagem de Boas-vindas
+
+**Objetivo:** Faça um programa que leia o nome de uma pessoa e mostre uma mensagem de boas-vindas.
+
+```
+Qual é o seu nome? João da Silva
+Olá João da Silva, é um prazer te conhecer!
+```
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    string nome;
+
+    cout << "Qual é o seu nome? ";
+    getline(cin, nome);
+    cout << "Olá " << nome << ", é um prazer te conhecer!\n";
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Soma de Dois Números
+
+**Objetivo:** Desenvolva um programa que leia dois números inteiros e mostre o somatório entre eles.
+
+```
+Digite um valor: 8
+Digite outro valor: 5
+A soma entre 8 e 5 é igual a 13.
+```
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int primeiro, segundo;
+
+    cout << "Digite um valor: ";
+    cin >> primeiro;
+    cout << "Digite outro valor: ";
+    cin >> segundo;
+    cout << "A soma entre " << primeiro << " e " << segundo
+              << " é igual a " << primeiro + segundo << ".\n";
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Média do Aluno
+
+**Objetivo:** Faça um programa que leia as duas notas de um aluno em uma matéria e mostre na tela a sua média na disciplina.
+
+```
+Nota 1: 4.5
+Nota 2: 8.5
+A média entre 4.5 e 8.5 é igual a 6.5
+```
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+int main() {
+    double nota1, nota2;
+
+    cout << "Nota 1: ";
+    cin >> nota1;
+    cout << "Nota 2: ";
+    cin >> nota2;
+
+    cout << fixed << setprecision(1);
+    cout << "A média entre " << nota1 << " e " << nota2
+              << " é igual a " << (nota1 + nota2) / 2 << '\n';
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Salário do Funcionário
+
+**Objetivo:** Crie um programa que leia o nome e o salário de um funcionário, mostrando no final uma mensagem.
+
+```
+Nome do Funcionário: Maria do Carmo
+Salário: 1850.45
+O funcionário Maria do Carmo tem um salário de R$1850.45 em Junho.
+```
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <iomanip>
+#include <string>
+using namespace std;
+
+int main() {
+    string nome;
+    double salario;
+
+    cout << "Nome do Funcionário: ";
+    getline(cin, nome);
+    cout << "Salário: ";
+    cin >> salario;
+
+    cout << fixed << setprecision(2);
+    cout << "O funcionário " << nome
+              << " tem um salário de R$" << salario << " em Junho.\n";
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Conversão de Reais para Dólares
+
+**Objetivo:** Faça um programa que leia quanto dinheiro uma pessoa tem na carteira (em R\$) e mostre quantos dólares ela pode comprar. Considere US\$1,00 = R\$5.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+int main() {
+    constexpr double cotacaoDolar = 5;
+    double reais;
+
+    cout << "Quanto dinheiro você tem na carteira? R$";
+    cin >> reais;
+    cout << fixed << setprecision(2);
+    cout << "Você pode comprar US$" << reais / cotacaoDolar << ".\n";
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Salário Mensal
+
+**Objetivo:** Crie um programa que leia o número de dias trabalhados em um mês e mostre o salário de um funcionário, sabendo que ele trabalha 8 horas por dia e ganha R$25 por hora trabalhada.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+int main() {
+    int diasTrabalhados;
+
+    cout << "Dias trabalhados no mês: ";
+    cin >> diasTrabalhados;
+
+    const double salario = diasTrabalhados * 8 * 25;
+
+
+    cout << "Salário do funcionário: R$" << salario << '\n';
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Pintura da Parede
+
+**Objetivo:** Faça um programa que leia a largura e a altura de uma parede, calcule e mostre a área a ser pintada e a quantidade de tinta necessária para o serviço, sabendo que cada litro de tinta pinta uma área de 2 metros quadrados.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+int main() {
+    double largura, altura;
+
+    cout << "Largura da parede: ";
+    cin >> largura;
+    cout << "Altura da parede: ";
+    cin >> altura;
+
+    const double area = largura * altura;
+    const double tinta = area / 2;
+
+    cout << fixed << setprecision(2);
+    cout << "Área a ser pintada: " << area << " m²\n";
+    cout << "Quantidade de tinta necessária: " << tinta << " litros\n";
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Aluguel de Carro
+
+**Objetivo:** Escreva um programa que pergunte a quantidade de Km percorridos por um carro alugado e a quantidade de dias pelos quais ele foi alugado. Calcule o preço total a pagar, sabendo que o carro custa R\$90 por dia e R\$0,20 por Km rodado.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+int main() {
+    double quilometros, dias;
+
+    cout << "Quantidade de Km percorridos: ";
+    cin >> quilometros;
+    cout << "Quantidade de dias alugados: ";
+    cin >> dias;
+
+    const double total = dias * 90 + quilometros * 0.20;
+
+    cout << fixed << setprecision(2);
+    cout << "Preço total a pagar: R$" << total << '\n';
+
+    return 0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 10: Tempo de Vida Perdido por Fumar
+
+**Objetivo:** Escreva um programa para calcular a redução do tempo de vida de um fumante. Pergunte a quantidade de cigarros fumados por dia e quantos anos ele já fumou. Considere que um fumante perde 10 min de vida a cada cigarro. Calcule quantos dias de vida um fumante perderá e exiba o total em dias.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int cigarrosPorDia, anosFumando;
+
+    cout << "Cigarros fumados por dia: ";
+    cin >> cigarrosPorDia;
+    cout << "Anos fumando: ";
+    cin >> anosFumando;
+
+    const int minutosPerdidos =
+        cigarrosPorDia * anosFumando * 365 * 10;
+    const double diasPerdidos = minutosPerdidos / (24.0 * 60.0);
+
+    cout << "Dias de vida perdidos: " << diasPerdidos << '\n';
+
+    return 0;
+}
+```
+
+</details>

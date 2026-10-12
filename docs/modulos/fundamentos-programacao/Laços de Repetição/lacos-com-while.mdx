@@ -1,0 +1,430 @@
+---
+id: exercicios-lacos-while
+title: Lacos de Repeticao com while
+sidebar_label: 2. Lacos com while
+sidebar_position: 2
+description: Exercicios de lacos de repeticao usando while.
+slug: /fundamentos-programacao/lacos-com-while
+
+---
+
+## 🛠 Requisitos e Materiais
+
+1. IDE C++ Online/Local
+
+## Lista de Exercícios
+
+### Exercício 1: Contagem de números pares e ímpares 
+
+**Objetivo:** Crie um programa que leia exatamente 6 números inteiros. Ao final, mostre quantos valores são pares e quantos são ímpares.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    int valor, pares = 0, impares = 0, contador = 0;
+    while (contador < 6)
+    {
+        cout << "Digite um numero inteiro: ";
+        cin >> valor;
+        if (valor % 2 == 0)
+            pares++;
+        else
+            impares++;
+        contador++;
+    }
+
+    cout << "Pares: " << pares << "\n";
+    cout << "Impares: " << impares;
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Sorteio de vinte números 
+
+**Objetivo:** Desenvolva um programa que sorteie 20 números inteiros no intervalo de 0 a 10, incluindo os extremos. Mostre todos os números sorteados e, ao final, informe quantas vezes cada valor de 0 a 10 apareceu.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <random>
+using namespace std;
+
+int main()
+{
+    random_device dispositivo;
+    mt19937 gerador(dispositivo());
+    uniform_int_distribution<int> distribuicao(0, 10);
+    int contador = 0;
+    int frequencia[11] = {};
+
+    while (contador < 20)
+    {
+        int sorteado = distribuicao(gerador);
+        cout << sorteado << " ";
+        frequencia[sorteado]++;
+        contador++;
+    }
+
+    cout << "\n";
+    for (int valor = 0; valor <= 10; valor++)
+        cout << valor << ": " << frequencia[valor] << "\n";
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Maior e menor preço 
+
+**Objetivo:** Faça um programa que leia o preço de exatamente 8 produtos. Ao final, mostre o maior preço e o menor preço digitados.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    double preco, maior = 0, menor = 0;
+    int contador = 0;
+
+    while (contador < 8)
+    {
+        cout << "Digite o preco do produto: ";
+        cin >> preco;
+
+        if (contador == 0 || preco > maior)
+            maior = preco;
+        if (contador == 0 || preco < menor)
+            menor = preco;
+
+        contador++;
+    }
+
+    cout << "Maior: " << maior << "\n";
+    cout << "Menor: " << menor;
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Classificação de idades 
+
+**Objetivo:** Crie um programa que leia a idade de exatamente 10 pessoas. Ao final, mostre quantas pessoas são maiores de idade (18 anos ou mais), quantas são menores de idade e a média das idades.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int idade, maiores = 0, menores = 0, soma = 0, contador = 0;
+    while (contador < 10)
+    {
+        cout << "Digite uma idade: ";
+        cin >> idade;
+        soma += idade;
+
+        if (idade >= 18)
+            maiores++;
+        else
+            menores++;
+
+        contador++;
+    }
+
+    cout << "Maiores de idade: " << maiores << "\n";
+    cout << "Menores de idade: " << menores << "\n";
+    cout << "Media: " << soma / 10.0;
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Estatísticas por sexo e idade 
+
+**Objetivo:** Faça um programa que leia a idade e o sexo de exatamente 5 pessoas. Considere `M` para masculino e `F` para feminino. Ao final, mostre a média de idade do grupo, a maior idade entre as mulheres e quantos homens têm mais de 18 anos.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int idade, soma = 0, maiorIdadeMulheres = 0;
+    int homensMaioresDe18 = 0, contador = 0;
+    char sexo;
+
+    while (contador < 5)
+    {
+        cout << "Digite a idade e o sexo (M/F): ";
+        cin >> idade >> sexo;
+        soma += idade;
+
+        if ((sexo == 'F' || sexo == 'f') && idade > maiorIdadeMulheres)
+            maiorIdadeMulheres = idade;
+        if ((sexo == 'M' || sexo == 'm') && idade > 18)
+            homensMaioresDe18++;
+
+        contador++;
+    }
+
+    cout << "Media: " << soma / 5.0 << "\n";
+    cout << "Maior idade entre as mulheres: " << maiorIdadeMulheres << "\n";
+    cout << "Homens com mais de 18 anos: " << homensMaioresDe18;
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: IMC de sete pessoas 
+
+**Objetivo:** Desenvolva um programa que leia o peso, em quilogramas, e a altura, em metros, de exatamente 7 pessoas. Calcule o IMC de cada pessoa pela fórmula `IMC = peso / (altura * altura)`. Ao final, mostre a média dos IMCs e quantas pessoas estão com IMC maior ou igual a 25.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    double peso, altura, somaImc = 0;
+    int imcMaiorOuIgualA25 = 0, contador = 0;
+
+    while (contador < 7)
+    {
+        cout << "Digite o peso e a altura: ";
+        cin >> peso >> altura;
+        double imc = peso / (altura * altura);
+        somaImc += imc;
+
+        if (imc >= 25)
+            imcMaiorOuIgualA25++;
+
+        contador++;
+    }
+
+    cout << "Media dos IMCs: " << somaImc / 7.0 << "\n";
+    cout << "IMCs maiores ou iguais a 25: " << imcMaiorOuIgualA25;
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Soma de números com sentinela 
+
+**Objetivo:** Crie um programa que leia vários números inteiros pelo teclado e some todos eles. A leitura deve terminar quando o usuário digitar o valor sentinela `0`; o zero não deve ser incluído na soma. Ao final, mostre o somatório dos valores digitados.
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    int valor, soma = 0;
+    cout << "Digite um numero inteiro (0 para encerrar): ";
+    cin >> valor;
+
+    while (valor != 0)
+    {
+        soma += valor;
+        cout << "Digite outro numero inteiro (0 para encerrar): ";
+        cin >> valor;
+    }
+
+    cout << "Soma: " << soma;
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Folha de pagamento por sexo 
+
+**Objetivo:** Desenvolva um programa que leia o salário e o sexo de vários funcionários. Considere `M` para masculino e `F` para feminino. Após cada funcionário, pergunte se o usuário deseja cadastrar outro, usando um `char` com `'S'`/`'N'`. Ao final, mostre o total de salários pagos aos homens e o total pago às mulheres.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    double salario, totalHomens = 0, totalMulheres = 0;
+    char sexo, continuar = 'S';
+
+    while (continuar == 'S' || continuar == 's')
+    {
+        cout << "Digite o salario e o sexo (M/F): ";
+        cin >> salario >> sexo;
+
+        if (sexo == 'M' || sexo == 'm')
+            totalHomens += salario;
+        else if (sexo == 'F' || sexo == 'f')
+            totalMulheres += salario;
+
+        cout << "Deseja cadastrar outro funcionario? (S/N): ";
+        cin >> continuar;
+    }
+
+    cout << "Total dos salarios dos homens: " << totalHomens << "\n";
+    cout << "Total dos salarios das mulheres: " << totalMulheres;
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Estatísticas de idade e sexo 
+
+**Objetivo:** Crie um programa que leia o sexo e a idade de várias pessoas. Considere `M` para masculino e `F` para feminino. Após cada pessoa, pergunte se o usuário deseja continuar, usando `'S'`/`'N'`. Ao final, mostre a quantidade total de pessoas, a média de idade dos homens, a média de idade das mulheres e a maior idade registrada.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int idade, somaHomens = 0, somaMulheres = 0;
+    int homens = 0, mulheres = 0, maiorIdade = 0;
+    char sexo, continuar = 'S';
+
+    while (continuar == 'S' || continuar == 's')
+    {
+        cout << "Digite a idade e o sexo (M/F): ";
+        cin >> idade >> sexo;
+        maiorIdade = max(maiorIdade, idade);
+
+        if (sexo == 'M' || sexo == 'm')
+        {
+            somaHomens += idade;
+            homens++;
+        }
+        else if (sexo == 'F' || sexo == 'f')
+        {
+            somaMulheres += idade;
+            mulheres++;
+        }
+
+        cout << "Deseja cadastrar outra pessoa? (S/N): ";
+        cin >> continuar;
+    }
+
+    cout << "Quantidade total: " << homens + mulheres << "\n";
+    cout << "Media dos homens: "
+         << (homens > 0 ? somaHomens / static_cast<double>(homens) : 0) << "\n";
+    cout << "Media das mulheres: "
+         << (mulheres > 0 ? somaMulheres / static_cast<double>(mulheres) : 0) << "\n";
+    cout << "Maior idade: " << maiorIdade;
+}
+```
+
+</details>
+
+---
+
+### Exercício 10: Cadastro e análise de pessoas 
+
+**Objetivo:** Desenvolva um programa que leia o nome, a idade e o sexo de várias pessoas. Considere `M` para masculino e `F` para feminino. Após cada cadastro, pergunte se o usuário deseja continuar, usando `'S'`/`'N'`. Ao final, mostre:
+
+- a) O nome da pessoa mais velha
+- b) O nome da mulher mais jovem
+- c) A média de idade do grupo
+- d) Quantos homens têm mais de 30 anos
+- e) Quantas mulheres têm menos de 18 anos
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main()
+{
+    string nome, nomeMaisVelha, nomeMulherMaisJovem;
+    int idade, quantidade = 0, soma = 0;
+    int maiorIdade = 0, menorIdadeMulher = 0;
+    int homensMaioresDe30 = 0, mulheresMenoresDe18 = 0;
+    char sexo, continuar = 'S';
+
+    while (continuar == 'S' || continuar == 's')
+    {
+        cout << "Digite o nome, a idade e o sexo (M/F): ";
+        cin >> nome >> idade >> sexo;
+        soma += idade;
+        quantidade++;
+
+        if (quantidade == 1 || idade > maiorIdade)
+        {
+            maiorIdade = idade;
+            nomeMaisVelha = nome;
+        }
+
+        if (sexo == 'F' || sexo == 'f')
+        {
+            if (menorIdadeMulher == 0 || idade < menorIdadeMulher)
+            {
+                menorIdadeMulher = idade;
+                nomeMulherMaisJovem = nome;
+            }
+            if (idade < 18)
+                mulheresMenoresDe18++;
+        }
+        else if (sexo == 'M' || sexo == 'm')
+        {
+            if (idade > 30)
+                homensMaioresDe30++;
+        }
+
+        cout << "Deseja cadastrar outra pessoa? (S/N): ";
+        cin >> continuar;
+    }
+
+    cout << "Pessoa mais velha: " << nomeMaisVelha << "\n";
+    cout << "Mulher mais jovem: " << nomeMulherMaisJovem << "\n";
+    cout << "Media: " << soma / static_cast<double>(quantidade) << "\n";
+    cout << "Homens com mais de 30 anos: " << homensMaioresDe30 << "\n";
+    cout << "Mulheres com menos de 18 anos: " << mulheresMenoresDe18;
+}
+```
+
+</details>

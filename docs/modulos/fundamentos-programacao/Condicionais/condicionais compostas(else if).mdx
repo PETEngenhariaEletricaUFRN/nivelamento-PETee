@@ -1,0 +1,404 @@
+---
+id: exercicios-condicionais-else-if
+title: Condicionais compostas (else if)
+sidebar_label: 2. Condicionais compostas (else if)
+sidebar_position: 2
+description: Exercícios de condicionais compostas com else if.
+slug: /fundamentos-programacao/condicionais-else-if
+---
+
+## 🛠 Requisitos e Materiais
+
+1. IDE C++ Online/Local
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Comparação de Números
+
+**Objetivo:** Escreva um programa que leia dois números inteiros e compare-os, mostrando na tela uma das mensagens abaixo:
+- O primeiro valor é o maior
+- O segundo valor é o maior
+- Não existe valor maior, os dois são iguais
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    int primeiro, segundo;
+    cout << "Digite dois números inteiros: ";
+    cin >> primeiro >> segundo;
+
+    if (primeiro > segundo)
+        cout << "O primeiro e maior.";
+    else if (segundo > primeiro)
+        cout << "O segundo e maior.";
+    else
+        cout << "Sao iguais.";
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Situação do Aluno
+
+**Objetivo:** Crie um programa que leia duas notas de um aluno e calcule a sua média, mostrando uma mensagem no final, de acordo com a média atingida:
+- Média até 4.9: REPROVADO
+- Média entre 5.0 e 6.9: RECUPERAÇÃO
+- Média 7.0 ou superior: APROVADO
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double nota1, nota2;
+    cout << "Digite as duas notas do aluno: ";
+    cin >> nota1 >> nota2;
+
+    double media = (nota1 + nota2) / 2;
+
+    if (media <= 4.9)
+        cout << "REPROVADO";
+    else if (media < 7)
+        cout << "RECUPERACAO";
+    else
+        cout << "APROVADO";
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Reajuste Salarial por Tempo de Empresa
+
+**Objetivo:** Desenvolva um programa que leia o nome de um funcionário, seu salário e quantos anos ele trabalha na empresa, e mostre seu novo salário, reajustado de acordo com a tabela a seguir:
+- Até 3 anos de empresa: aumento de 3%
+- Entre 3 e 10 anos: aumento de 12,5%
+- 10 anos ou mais: aumento de 20%
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+int main()
+{
+    string nome;
+    double salario;
+    int anos;
+
+    cout << "Digite o nome do funcionário: ";
+    getline(cin, nome);
+    cout << "Digite o salário e o tempo de empresa em anos: ";
+    cin >> salario >> anos;
+
+    double percentual;
+    if (anos <= 3)
+        percentual = 0.03;
+    else if (anos < 10)
+        percentual = 0.125;
+    else
+        percentual = 0.20;
+
+    double novoSalario = salario * (1 + percentual);
+    cout << nome << " R$" << novoSalario;
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Classificação do Triângulo
+
+**Objetivo:** Refaça o programa do exercício 8 sobre condicionais simples, acrescentando o recurso de mostrar que tipo de triângulo será formado:
+- EQUILÁTERO: todos os lados iguais
+- ISÓSCELES: dois lados iguais
+- ESCALENO: todos os lados diferentes
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double ladoA, ladoB, ladoC;
+    cout << "Digite os três lados do triângulo: ";
+    cin >> ladoA >> ladoB >> ladoC;
+
+    bool formaTriangulo =
+        ladoA > 0 && ladoB > 0 && ladoC > 0 &&
+        ladoA < ladoB + ladoC &&
+        ladoB < ladoA + ladoC &&
+        ladoC < ladoA + ladoB;
+
+    if (!formaTriangulo)
+        cout << "Nao forma triangulo";
+    else if (ladoA == ladoB && ladoB == ladoC)
+        cout << "EQUILATERO";
+    else if (ladoA == ladoB || ladoA == ladoC || ladoB == ladoC)
+        cout << "ISOSCELES";
+    else
+        cout << "ESCALENO";
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Jogo de JoKenPo
+
+**Objetivo:** Crie um jogo de JoKenPo em que o computador sorteia sua jogada (use `<random>`).
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <random>
+using namespace std;
+int main()
+{
+    int jogador;
+    cout << "Digite sua jogada (1: pedra, 2: papel, 3: tesoura): ";
+    cin >> jogador;
+
+    mt19937 gerador(random_device{}());
+    int computador = uniform_int_distribution<int>(1, 3)(gerador);
+
+    if (jogador == computador)
+        cout << "Empate";
+    else if ((jogador == 1 && computador == 3) ||
+             (jogador == 2 && computador == 1) ||
+             (jogador == 3 && computador == 2))
+        cout << "Voce venceu";
+    else
+        cout << "Computador venceu";
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Jogo de Adivinhação
+
+**Objetivo:** Crie um jogo onde o computador vai sortear um número entre 1 e 5 e o jogador vai tentar descobrir qual foi o valor sorteado.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <random>
+using namespace std;
+int main()
+{
+    int tentativa;
+    cout << "Tente adivinhar o número sorteado entre 1 e 5: ";
+    cin >> tentativa;
+
+    mt19937 gerador(random_device{}());
+    int sorteado = uniform_int_distribution<int>(1, 5)(gerador);
+
+    if (tentativa == sorteado)
+        cout << "Acertou";
+    else
+        cout << "Errou";
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Aprovação de Empréstimo
+
+**Objetivo:** Escreva um programa para aprovar ou não o empréstimo bancário para a compra de uma casa. O programa vai perguntar o valor da casa, o salário do comprador e em quantos anos ele vai pagar. Calcule o valor da prestação mensal, sabendo que ela não pode exceder 30% do salário, ou então o empréstimo será negado.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double valorCasa, salario;
+    int anos;
+    cout << "Digite o valor da casa, o salário e o prazo em anos: ";
+    cin >> valorCasa >> salario >> anos;
+
+    double prestacao = valorCasa / (anos * 12);
+    if (prestacao <= salario * 0.30)
+        cout << "Aprovado";
+    else
+        cout << "Negado";
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Custo do Aluguel de Carros
+
+**Objetivo:** Uma empresa de aluguel de carros precisa cobrar pelos seus serviços. O aluguel de um carro custa R\$90 por dia para carro popular e R\$150 por dia para carro de luxo. Além disso, o cliente paga por Km percorrido. Faça um programa que leia o tipo de carro alugado (popular ou luxo), quantos dias de aluguel e quantos Km foram percorridos. No final, mostre o preço a ser pago de acordo com a tabela a seguir:
+- Carros populares (R$90 por dia)
+  - Até 100 Km percorridos: R$0,20 por Km
+  - Acima de 100 Km percorridos: R$0,10 por Km
+- Carros de luxo (R$150 por dia)
+  - Até 200 Km percorridos: R$0,30 por Km
+  - Acima de 200 Km percorridos: R$0,25 por Km
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    char tipoCarro;
+    double dias, quilometros;
+    cout << "Digite o tipo do carro (P/L), os dias e os quilômetros: ";
+    cin >> tipoCarro >> dias >> quilometros;
+
+    bool carroPopular = tipoCarro == 'P' || tipoCarro == 'p';
+    double diaria;
+    double precoPorKm;
+
+    if (carroPopular)
+    {
+        diaria = 90;
+        if (quilometros <= 100)
+            precoPorKm = 0.20;
+        else
+            precoPorKm = 0.10;
+    }
+    else
+    {
+        diaria = 150;
+        if (quilometros <= 200)
+            precoPorKm = 0.30;
+        else
+            precoPorKm = 0.25;
+    }
+
+    double total = dias * diaria + quilometros * precoPorKm;
+    cout << "R$" << total;
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Pontos por Atividade Física
+
+**Objetivo:** Um programa de vida saudável quer dar pontos por atividades físicas, que podem ser trocados por dinheiro. O sistema funciona assim:
+- Cada hora de atividade física no mês vale pontos:
+  - até 10 h de atividade no mês: ganha 2 pontos por hora
+  - de 10 h até 20 h de atividade no mês: ganha 5 pontos por hora
+  - acima de 20 h de atividade no mês: ganha 10 pontos por hora
+- A cada ponto ganho, o cliente fatura R$0,05 (5 centavos)
+
+Faça um programa que leia quantas horas de atividade uma pessoa teve no mês, calcule e mostre quantos pontos ela teve e quanto dinheiro ela conseguiu ganhar.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double horas;
+    cout << "Digite a quantidade de horas de atividade no mês: ";
+    cin >> horas;
+
+    double pontosPorHora;
+    if (horas <= 10)
+        pontosPorHora = 2;
+    else if (horas <= 20)
+        pontosPorHora = 5;
+    else
+        pontosPorHora = 10;
+
+    double pontos = horas * pontosPorHora;
+    double dinheiro = pontos * 0.05;
+    cout << pontos << " pontos R$" << dinheiro;
+}
+```
+
+</details>
+
+---
+
+### Exercício 10: Reajuste Salarial por Gênero e Tempo de Empresa
+
+**Objetivo:** Uma empresa precisa reajustar o salário dos seus funcionários, dando um aumento de acordo com alguns fatores. Faça um programa que leia o salário atual, o gênero do funcionário e há quantos anos esse funcionário trabalha na empresa. No final, mostre o seu novo salário, baseado na tabela a seguir:
+- Mulheres
+  - menos de 15 anos de empresa: +5%
+  - de 15 até 20 anos de empresa: +12%
+  - mais de 20 anos de empresa: +23%
+- Homens
+  - menos de 20 anos de empresa: +3%
+  - de 20 até 30 anos de empresa: +13%
+  - mais de 30 anos de empresa: +25%
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+int main()
+{
+    double salario;
+    char genero;
+    int anos;
+    cout << "Digite o salário, o gênero (M/F) e o tempo de empresa em anos: ";
+    cin >> salario >> genero >> anos;
+
+    double percentual;
+    if (genero == 'F' || genero == 'f')
+    {
+        if (anos < 15)
+            percentual = 0.05;
+        else if (anos <= 20)
+            percentual = 0.12;
+        else
+            percentual = 0.23;
+    }
+    else
+    {
+        if (anos < 20)
+            percentual = 0.03;
+        else if (anos <= 30)
+            percentual = 0.13;
+        else
+            percentual = 0.25;
+    }
+
+    double novoSalario = salario * (1 + percentual);
+    cout << "R$" << novoSalario;
+}
+```
+
+</details>

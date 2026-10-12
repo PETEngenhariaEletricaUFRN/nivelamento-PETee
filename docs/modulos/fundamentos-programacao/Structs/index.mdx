@@ -4,8 +4,574 @@ slug: /fundamentos-programacao/structs
 
 # Structs
 
-Exercícios sobre criação e uso de estruturas de dados compostas.
+As `structs` permitem agrupar dados relacionados em um novo tipo. Organize cada solução
+em arquivos separados:
 
-## Exercícios
+- o arquivo `.h` declara a `struct` e as funções;
+- o arquivo `.cpp` implementa as funções;
+- o `main.cpp` executa o programa e conversa com o usuário.
 
-Adicione aqui os exercícios deste submódulo.
+
+## 🛠 Requisitos e Materiais
+
+1. IDE C++ Online/Local
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Cadastro de um livro
+
+**Objetivo:** Crie uma `struct Livro` com título, autor e ano de publicação.
+Separe a declaração da estrutura, a função de exibição e o programa principal
+em arquivos diferentes.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**livro.h**
+
+```cpp
+#ifndef LIVRO_H
+#define LIVRO_H
+
+#include <string>
+using namespace std;
+
+struct Livro {
+    string titulo;
+    string autor;
+    int anoPublicacao;
+};
+
+void mostrarLivro(const Livro& livro);
+
+#endif
+```
+
+**livro.cpp**
+
+```cpp
+#include "livro.h"
+#include <iostream>
+using namespace std;
+
+void mostrarLivro(const Livro& livro) {
+    cout << "Titulo: " << livro.titulo << '\n';
+    cout << "Autor: " << livro.autor << '\n';
+    cout << "Ano de publicacao: " << livro.anoPublicacao << '\n';
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "livro.h"
+using namespace std;
+
+int main() {
+    Livro livro{"O Senhor dos Aneis", "J. R. R. Tolkien", 1954};
+    mostrarLivro(livro);
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Cadastro de aluno
+
+**Objetivo:** Crie uma `struct Aluno` com nome, idade e nota. Leia os dados
+no `main.cpp` e utilize uma função modularizada para exibir o cadastro.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**aluno.h**
+
+```cpp
+#ifndef ALUNO_H
+#define ALUNO_H
+
+#include <string>
+using namespace std;
+
+struct Aluno {
+    string nome;
+    int idade;
+    double nota;
+};
+
+void mostrarAluno(const Aluno& aluno);
+
+#endif
+```
+
+**aluno.cpp**
+
+```cpp
+#include "aluno.h"
+#include <iostream>
+using namespace std;
+
+void mostrarAluno(const Aluno& aluno) {
+    cout << "\nResumo do cadastro\n";
+    cout << "Nome: " << aluno.nome << '\n';
+    cout << "Idade: " << aluno.idade << " anos\n";
+    cout << "Nota: " << aluno.nota << '\n';
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "aluno.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    Aluno aluno;
+    cout << "Digite o nome do aluno: ";
+    getline(cin, aluno.nome);
+    cout << "Digite a idade: ";
+    cin >> aluno.idade;
+    cout << "Digite a nota final: ";
+    cin >> aluno.nota;
+    mostrarAluno(aluno);
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Produto com cálculo de desconto
+
+**Objetivo:** Crie uma `struct Produto` com nome, preço e desconto percentual.
+Coloque o cálculo do preço final no arquivo de implementação.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**produto.h**
+
+```cpp
+#ifndef PRODUTO_H
+#define PRODUTO_H
+
+#include <string>
+using namespace std;
+
+struct Produto {
+    string nome;
+    double preco;
+    double desconto;
+};
+
+double calcularPrecoFinal(const Produto& produto);
+void mostrarProduto(const Produto& produto);
+
+#endif
+```
+
+**produto.cpp**
+
+```cpp
+#include "produto.h"
+#include <iomanip>
+#include <iostream>
+using namespace std;
+
+double calcularPrecoFinal(const Produto& produto) {
+    return produto.preco * (1 - produto.desconto / 100);
+}
+
+void mostrarProduto(const Produto& produto) {
+    cout << fixed << setprecision(2);
+    cout << "\nProduto: " << produto.nome << '\n';
+    cout << "Preco final: R$ " << calcularPrecoFinal(produto) << '\n';
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "produto.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    Produto produto;
+    cout << "Digite o nome do produto: ";
+    getline(cin, produto.nome);
+    cout << "Digite o preco: ";
+    cin >> produto.preco;
+    cout << "Digite o desconto (%): ";
+    cin >> produto.desconto;
+    mostrarProduto(produto);
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Vetor de estruturas e média
+
+**Objetivo:** Crie uma `struct Aluno` com nome e três notas. Cadastre três
+alunos e mova o cálculo da média e a busca do melhor aluno para o módulo
+separado.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**alunos.h**
+
+```cpp
+#ifndef ALUNOS_H
+#define ALUNOS_H
+
+#include <string>
+using namespace std;
+
+struct Aluno {
+    string nome;
+    double notas[3];
+};
+
+double calcularMedia(const Aluno& aluno);
+int indiceDoMelhorAluno(const Aluno alunos[], int quantidade);
+
+#endif
+```
+
+**alunos.cpp**
+
+```cpp
+#include "alunos.h"
+
+double calcularMedia(const Aluno& aluno) {
+    return (aluno.notas[0] + aluno.notas[1] + aluno.notas[2]) / 3;
+}
+
+int indiceDoMelhorAluno(const Aluno alunos[], int quantidade) {
+    int melhor = 0;
+    for (int i = 1; i < quantidade; ++i) {
+        if (calcularMedia(alunos[i]) > calcularMedia(alunos[melhor])) {
+            melhor = i;
+        }
+    }
+    return melhor;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "alunos.h"
+#include <iomanip>
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int quantidade = 3;
+    Aluno alunos[quantidade];
+
+    for (int i = 0; i < quantidade; ++i) {
+        cout << "Nome do aluno " << i + 1 << ": ";
+        getline(cin, alunos[i].nome);
+        for (int j = 0; j < 3; ++j) {
+            cout << "Nota " << j + 1 << ": ";
+            cin >> alunos[i].notas[j];
+        }
+        cin.ignore();
+    }
+
+    int melhor = indiceDoMelhorAluno(alunos, quantidade);
+    cout << fixed << setprecision(2);
+    cout << "\nMelhor aluno: " << alunos[melhor].nome << '\n';
+    cout << "Media: " << calcularMedia(alunos[melhor]) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Estrutura aninhada para endereço (Intermediário)
+
+**Objetivo:** Crie `Endereco` e utilize-a dentro de `Pessoa`. Separe as duas
+estruturas no cabeçalho e a função que exibe o cadastro no arquivo `.cpp`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**pessoa.h**
+
+```cpp
+#ifndef PESSOA_H
+#define PESSOA_H
+
+#include <string>
+using namespace std;
+
+struct Endereco {
+    string rua;
+    int numero;
+    string cidade;
+    string estado;
+};
+
+struct Pessoa {
+    string nome;
+    Endereco endereco;
+};
+
+void mostrarPessoa(const Pessoa& pessoa);
+
+#endif
+```
+
+**pessoa.cpp**
+
+```cpp
+#include "pessoa.h"
+#include <iostream>
+using namespace std;
+
+void mostrarPessoa(const Pessoa& pessoa) {
+    cout << "\nCadastro\n";
+    cout << pessoa.nome << '\n';
+    cout << pessoa.endereco.rua << ", " << pessoa.endereco.numero << '\n';
+    cout << pessoa.endereco.cidade << " - " << pessoa.endereco.estado << '\n';
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "pessoa.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    Pessoa pessoa;
+    cout << "Nome: ";
+    getline(cin, pessoa.nome);
+    cout << "Rua: ";
+    getline(cin, pessoa.endereco.rua);
+    cout << "Numero: ";
+    cin >> pessoa.endereco.numero;
+    cin.ignore();
+    cout << "Cidade: ";
+    getline(cin, pessoa.endereco.cidade);
+    cout << "Estado: ";
+    getline(cin, pessoa.endereco.estado);
+    mostrarPessoa(pessoa);
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Funções que recebem e retornam estruturas (Intermediário)
+
+**Objetivo:** Crie uma `struct Retangulo`. Implemente, em um arquivo separado,
+as funções que calculam área e perímetro.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**retangulo.h**
+
+```cpp
+#ifndef RETANGULO_H
+#define RETANGULO_H
+
+struct Retangulo {
+    double base;
+    double altura;
+};
+
+double calcularArea(const Retangulo& retangulo);
+double calcularPerimetro(const Retangulo& retangulo);
+
+#endif
+```
+
+**retangulo.cpp**
+
+```cpp
+#include "retangulo.h"
+
+double calcularArea(const Retangulo& retangulo) {
+    return retangulo.base * retangulo.altura;
+}
+
+double calcularPerimetro(const Retangulo& retangulo) {
+    return 2 * (retangulo.base + retangulo.altura);
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "retangulo.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    Retangulo retangulo;
+    cout << "Digite a base: ";
+    cin >> retangulo.base;
+    cout << "Digite a altura: ";
+    cin >> retangulo.altura;
+    cout << "Area: " << calcularArea(retangulo) << '\n';
+    cout << "Perimetro: " << calcularPerimetro(retangulo) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Atualização por referência (Intermediário)
+
+**Objetivo:** Crie uma `struct Conta`. Coloque a função de depósito em um
+arquivo de implementação e faça a alteração do saldo por referência.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**conta.h**
+
+```cpp
+#ifndef CONTA_H
+#define CONTA_H
+
+#include <string>
+using namespace std;
+
+struct Conta {
+    string titular;
+    double saldo;
+};
+
+bool depositar(Conta& conta, double valor);
+
+#endif
+```
+
+**conta.cpp**
+
+```cpp
+#include "conta.h"
+
+bool depositar(Conta& conta, double valor) {
+    if (valor <= 0) {
+        return false;
+    }
+    conta.saldo += valor;
+    return true;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "conta.h"
+#include <iomanip>
+#include <iostream>
+using namespace std;
+
+int main() {
+    Conta conta;
+    double valor;
+    cout << "Nome do titular: ";
+    getline(cin, conta.titular);
+    cout << "Saldo inicial: ";
+    cin >> conta.saldo;
+    cout << "Valor do deposito: ";
+    cin >> valor;
+
+    if (!depositar(conta, valor)) {
+        cout << "O deposito deve ser positivo.\n";
+        return 0;
+    }
+    cout << fixed << setprecision(2);
+    cout << "Saldo de " << conta.titular << ": R$ " << conta.saldo << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Ponteiro para uma estrutura (Intermediário)
+
+**Objetivo:** Crie uma `struct Sensor`. Separe a função que atualiza o sensor
+e use um ponteiro para acessar os campos com o operador `->`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**sensor.h**
+
+```cpp
+#ifndef SENSOR_H
+#define SENSOR_H
+
+#include <string>
+using namespace std;
+
+struct Sensor {
+    string nome;
+    double temperatura;
+    string estado;
+};
+
+void atualizarTemperatura(Sensor* sensor, double novaTemperatura);
+
+#endif
+```
+
+**sensor.cpp**
+
+```cpp
+#include "sensor.h"
+
+void atualizarTemperatura(Sensor* sensor, double novaTemperatura) {
+    sensor->temperatura = novaTemperatura;
+    sensor->estado = novaTemperatura >= 0 && novaTemperatura <= 40
+        ? "Normal"
+        : "Alerta";
+}
+```
+
+**main.cpp**
+
+```cpp
+#include "sensor.h"
+#include <iostream>
+using namespace std;
+
+int main() {
+    Sensor sensor;
+    Sensor* ponteiro = &sensor;
+    double novaTemperatura;
+
+    cout << "Nome do sensor: ";
+    getline(cin, ponteiro->nome);
+    cout << "Temperatura inicial: ";
+    cin >> ponteiro->temperatura;
+    cout << "Nova temperatura: ";
+    cin >> novaTemperatura;
+    atualizarTemperatura(ponteiro, novaTemperatura);
+
+    cout << "\nSensor: " << ponteiro->nome << '\n';
+    cout << "Temperatura: " << ponteiro->temperatura << " graus C\n";
+    cout << "Estado: " << ponteiro->estado << '\n';
+}
+```
+
+</details>
+

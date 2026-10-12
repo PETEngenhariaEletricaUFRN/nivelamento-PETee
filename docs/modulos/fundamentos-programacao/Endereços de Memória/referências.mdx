@@ -1,0 +1,215 @@
+---
+sidebar_position: 2
+slug: /fundamentos-programacao/referencias
+---
+
+# Referências
+
+
+## 🛠 Requisitos e Materiais
+
+1. IDE C++ Online/Local
+
+## 📝 Lista de exercícios
+
+### Exercício 1: Manipulação de referência
+
+**Objetivo:** Declare um inteiro e uma referência para ele. Altere o valor usando a referência e mostre o valor pela variável original.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int valor = 10;
+    int& referencia = valor;
+    referencia = 25;
+    cout << "O valor original, alterado pela referência, é: "
+         << valor << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Referência como parâmetro 
+
+**Objetivo:** Implemente `void incrementar(int& valor)` e use-a para alterar uma variável da `main` sem retornar o novo valor.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void incrementar(int& valor) {
+    ++valor;
+}
+
+int main() {
+    int valor;
+    cout << "Digite um número inteiro para incrementar: ";
+    cin >> valor;
+    incrementar(valor);
+    cout << "O valor após o incremento é: " << valor << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Troca por referência 
+
+**Objetivo:** Crie `trocar(int& a, int& b)` para trocar dois valores.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void trocar(int& a, int& b) {
+    int aux = a;
+    a = b;
+    b = aux;
+}
+
+int main() {
+    int a, b;
+    cout << "Digite dois números inteiros para trocar: ";
+    cin >> a >> b;
+    trocar(a, b);
+    cout << "Após a troca, o primeiro número é " << a
+         << " e o segundo é " << b << ".\n";
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Referência constante 
+
+**Objetivo:** Implemente uma função que receba uma `string` por `const&`, conte seus caracteres e não faça cópia nem permita alteração do texto recebido.
+
+:::tip
+Pesquise sobre as funções da biblioteca string.
+:::
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+size_t quantidadeCaracteres(const string& texto) {
+    return texto.size();
+}
+
+int main() {
+    string texto;
+    cout << "Digite um texto para contar seus caracteres: ";
+    getline(cin, texto);
+    cout << "O texto possui " << quantidadeCaracteres(texto)
+         << " caracteres.\n";
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Retorno de múltiplos resultados 
+
+**Objetivo:** Faça uma função que receba um vetor por `const&` e devolva, por referências de saída, o menor e o maior valor encontrados.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void extremos(const int (&valores)[4], int& menor, int& maior) {
+    menor = maior = valores[0];
+    for (const int* p = valores + 1; p < valores + 4; ++p) {
+        if (*p < menor) menor = *p;
+        if (*p > maior) maior = *p;
+    }
+}
+
+int main() {
+    int valores[] = {8, 2, 11, 5};
+    int menor, maior;
+    extremos(valores, menor, maior);
+    cout << "Menor valor: " << menor << '\n';
+    cout << "Maior valor: " << maior << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Referência retornada 
+
+**Objetivo:** Implemente uma função que retorne uma referência ao maior elemento de um vetor, permitindo que o chamador altere esse elemento. Não retorne referência para uma variável local.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int& maior(int (&valores)[3]) {
+    int* resultado = valores;
+    for (int* p = valores + 1; p < valores + 3; ++p)
+        if (*p > *resultado) resultado = p;
+    return *resultado;
+}
+
+int main() {
+    int valores[] = {4, 9, 3};
+    maior(valores) = 100;
+    cout << "O maior elemento foi alterado para: " << maior(valores) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Referência para array 
+
+**Objetivo:** Escreva uma função que receba uma referência para um array de exatamente cinco inteiros. Calcule a soma sem perder a informação do tamanho no parâmetro.
+
+<details>
+<summary>💡 Ver resolução</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int soma(const int (&valores)[5]) {
+    int resultado = 0;
+    for (int i = 0; i < 5; ++i) resultado += valores[i];
+    return resultado;
+}
+
+int main() {
+    int valores[5] = {1, 2, 3, 4, 5};
+    cout << "A soma dos cinco elementos é: " << soma(valores) << '\n';
+}
+```
+
+</details>

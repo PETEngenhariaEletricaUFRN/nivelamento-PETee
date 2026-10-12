@@ -4,8 +4,364 @@ slug: /fundamentos-programacao/matrizes
 
 # Matrizes
 
-Exercícios sobre declaração, acesso e manipulação de matrizes.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+1. IDE C++ Online/Local
 
-Adicione aqui os exercícios deste submódulo.
+## 📝 Lista de Exercícios
+
+### Exercício 1: Preenchimento e exibição de uma matriz
+
+**Objetivo:** Declare uma matriz inteira de 3 linhas e 4 colunas, preencha-a com os valores informados pelo usuário e mostre todos os seus elementos organizados em linhas e colunas.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int linhas = 3;
+    const int colunas = 4;
+    int matriz[linhas][colunas];
+
+    for (int i = 0; i < linhas; ++i) {
+        for (int j = 0; j < colunas; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+        }
+    }
+
+    for (int i = 0; i < linhas; ++i) {
+        for (int j = 0; j < colunas; ++j) {
+            cout << matriz[i][j] << ' ';
+        }
+        cout << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Soma de todos os elementos
+
+**Objetivo:** Leia uma matriz de 3 linhas e 3 colunas e calcule a soma de todos os seus elementos.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 3;
+    int matriz[tamanho][tamanho];
+    int soma = 0;
+
+    for (int i = 0; i < tamanho; ++i) {
+        for (int j = 0; j < tamanho; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+            soma += matriz[i][j];
+        }
+    }
+
+    cout << "Soma: " << soma << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Soma das linhas
+
+**Objetivo:** Leia uma matriz de 4 linhas e 3 colunas e mostre a soma dos elementos de cada linha.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int linhas = 4;
+    const int colunas = 3;
+    int matriz[linhas][colunas];
+
+    for (int i = 0; i < linhas; ++i) {
+        for (int j = 0; j < colunas; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+        }
+    }
+
+    for (int i = 0; i < linhas; ++i) {
+        int soma = 0;
+        for (int j = 0; j < colunas; ++j) {
+            soma += matriz[i][j];
+        }
+        cout << "Soma da linha " << i << ": " << soma << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Contagem de números pares
+
+**Objetivo:** Leia uma matriz de 5 linhas e 5 colunas, conte quantos elementos são pares e mostre essa quantidade.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 5;
+    int matriz[tamanho][tamanho];
+    int pares = 0;
+
+    for (int i = 0; i < tamanho; ++i) {
+        for (int j = 0; j < tamanho; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+            if (matriz[i][j] % 2 == 0) {
+                ++pares;
+            }
+        }
+    }
+
+    cout << "Quantidade de pares: " << pares << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Maior elemento e sua posição
+
+**Objetivo:** Leia uma matriz de 4 linhas e 4 colunas, encontre o maior elemento e informe todas as posições em que ele aparece.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 4;
+    int matriz[tamanho][tamanho];
+
+    for (int i = 0; i < tamanho; ++i) {
+        for (int j = 0; j < tamanho; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+        }
+    }
+
+    int maior = matriz[0][0];
+    for (int i = 0; i < tamanho; ++i) {
+        for (int j = 0; j < tamanho; ++j) {
+            if (matriz[i][j] > maior) {
+                maior = matriz[i][j];
+            }
+        }
+    }
+
+    cout << "Maior elemento: " << maior << '\n';
+    for (int i = 0; i < tamanho; ++i) {
+        for (int j = 0; j < tamanho; ++j) {
+            if (matriz[i][j] == maior) {
+                cout << "Posicao: (" << i << ", " << j << ")\n";
+            }
+        }
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Diagonal principal
+
+**Objetivo:** Leia uma matriz quadrada de ordem 4, mostre os elementos da diagonal principal e a soma deles.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 4;
+    int matriz[tamanho][tamanho];
+    int soma = 0;
+
+    for (int i = 0; i < tamanho; ++i) {
+        for (int j = 0; j < tamanho; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+        }
+    }
+
+    cout << "Diagonal principal: ";
+    for (int i = 0; i < tamanho; ++i) {
+        cout << matriz[i][i] << ' ';
+        soma += matriz[i][i];
+    }
+    cout << "\nSoma: " << soma << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Diagonal secundária
+
+**Objetivo:** Leia uma matriz quadrada de ordem 5, mostre os elementos da diagonal secundária e a soma deles.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int tamanho = 5;
+    int matriz[tamanho][tamanho];
+    int soma = 0;
+
+    for (int i = 0; i < tamanho; ++i) {
+        for (int j = 0; j < tamanho; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+        }
+    }
+
+    cout << "Diagonal secundaria: ";
+    for (int i = 0; i < tamanho; ++i) {
+        int coluna = tamanho - 1 - i;
+        cout << matriz[i][coluna] << ' ';
+        soma += matriz[i][coluna];
+    }
+    cout << "\nSoma: " << soma << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Matriz transposta
+
+**Objetivo:** Leia uma matriz de 2 linhas e 3 colunas e mostre sua transposta.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int linhas = 2;
+    const int colunas = 3;
+    int matriz[linhas][colunas];
+
+    for (int i = 0; i < linhas; ++i) {
+        for (int j = 0; j < colunas; ++j) {
+            cout << "Digite o elemento da linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> matriz[i][j];
+        }
+    }
+
+    for (int j = 0; j < colunas; ++j) {
+        for (int i = 0; i < linhas; ++i) {
+            cout << matriz[i][j] << ' ';
+        }
+        cout << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Multiplicação de matrizes
+
+**Objetivo:** Leia uma matriz `A` de 2x3 e uma matriz `B` de 3x2 e calcule a matriz resultante `C = A * B`, de dimensão 2x2.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    const int linhasA = 2;
+    const int colunasA = 3;
+    const int colunasB = 2;
+    int a[linhasA][colunasA];
+    int b[colunasA][colunasB];
+    int resultado[linhasA][colunasB] = {};
+
+    for (int i = 0; i < linhasA; ++i) {
+        for (int j = 0; j < colunasA; ++j) {
+            cout << "Digite o elemento de A na linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> a[i][j];
+        }
+    }
+
+    for (int i = 0; i < colunasA; ++i) {
+        for (int j = 0; j < colunasB; ++j) {
+            cout << "Digite o elemento de B na linha " << i + 1
+                 << " e coluna " << j + 1 << ": ";
+            cin >> b[i][j];
+        }
+    }
+
+    for (int i = 0; i < linhasA; ++i) {
+        for (int j = 0; j < colunasB; ++j) {
+            for (int k = 0; k < colunasA; ++k) {
+                resultado[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+
+    for (int i = 0; i < linhasA; ++i) {
+        for (int j = 0; j < colunasB; ++j) {
+            cout << resultado[i][j] << ' ';
+        }
+        cout << '\n';
+    }
+}
+```
+
+</details>

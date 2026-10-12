@@ -1,0 +1,328 @@
+---
+id: exercicios-lacos-for
+title: Laços de Repetição com for
+sidebar_label: 1. Laços com for
+sidebar_position: 1
+description: Exercícios de laços de repetição usando for.
+slug: /fundamentos-programacao/lacos-com-for
+---
+## 🛠 Requisitos e Materiais
+
+1. IDE C++ Online/Local
+
+## Lista de Exercícios
+
+### Exercício 1: Contagem crescente de 6 a 11 
+
+**Objetivo:** Escreva um programa que mostre na tela a contagem de 6 até 11, incluindo os extremos, com os valores separados por espaços:
+
+```text
+6 7 8 9 10 11 Acabou!
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    for (int valor = 6; valor <= 11; valor++)
+        cout << valor << " ";
+
+    cout << "Acabou!";
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Contagem regressiva de 10 a 3 
+
+**Objetivo:** Faça um programa que mostre na tela uma contagem regressiva de 10 até 3, incluindo os extremos, com os valores separados por espaços:
+
+```text
+10 9 8 7 6 5 4 3 Acabou!
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    for (int valor = 10; valor >= 3; valor--)
+        cout << valor << " ";
+
+    cout << "Acabou!";
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Múltiplos de 3 até 18 
+
+**Objetivo:** Crie um programa que mostre na tela os múltiplos de 3 de 0 até 18, incluindo os extremos:
+
+```text
+0 3 6 9 12 15 18 Acabou!
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    for (int valor = 0; valor <= 18; valor += 3)
+        cout << valor << " ";
+
+    cout << "Acabou!";
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Contagem regressiva com múltiplos de 4 
+
+**Objetivo:** Desenvolva um programa que mostre uma contagem regressiva de 30 até 1. Os números divisíveis por 4 devem aparecer entre colchetes; os demais devem aparecer normalmente:
+
+```text
+30 29 [28] 27 26 25 [24] 23 22 21 [20] 19 18 17 [16] 15 14 13 [12] 11 10 9 [8] 7 6 5 [4] 3 2 1
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    for (int valor = 30; valor >= 1; valor--)
+    {
+        if (valor % 4 == 0)
+            cout << "[" << valor << "] ";
+        else
+            cout << valor << " ";
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Contagem com incremento informado 
+
+**Objetivo:** Crie um programa que leia três números inteiros: o valor inicial `inicio`, o valor final `fim` e um incremento positivo `incremento`. Em seguida, mostre todos os valores do intervalo de `inicio` até `fim`, aumentando pelo incremento informado. Considere que `inicio` não será maior que `fim`.
+
+```text
+Entrada: 2 10 2
+Saída: 2 4 6 8 10 Acabou!
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int inicio, fim, incremento;
+    cout << "Digite o inicio, o fim e o incremento: ";
+    cin >> inicio >> fim >> incremento;
+
+    for (int valor = inicio; valor <= fim; valor += incremento)
+        cout << valor << " ";
+
+    cout << "Acabou!";
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Contagem crescente ou regressiva 
+
+**Objetivo:** Adapte o programa do exercício 5 para aceitar tanto uma contagem crescente quanto uma regressiva. Leia `inicio`, `fim` e um incremento positivo.
+
+```text
+Entrada: 10 2 2
+Saída: 10 8 6 4 2 Acabou!
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int inicio, fim, incremento;
+    cout << "Digite o inicio, o fim e o incremento: ";
+    cin >> inicio >> fim >> incremento;
+
+    if (inicio <= fim)
+    {
+        for (int valor = inicio; valor <= fim; valor += incremento)
+            cout << valor << " ";
+    }
+    else
+    {
+        for (int valor = inicio; valor >= fim; valor -= incremento)
+            cout << valor << " ";
+    }
+
+    cout << "Acabou!";
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Soma dos números pares de 6 a 100 
+
+**Objetivo:** Crie um programa que calcule e mostre na tela o resultado da soma `6 + 8 + 10 + 12 + 14 + ... + 98 + 100`.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int soma = 0;
+
+    for (int valor = 6; valor <= 100; valor += 2)
+        soma += valor;
+
+    cout << soma;
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Soma decrescente de 500 a 0 
+
+**Objetivo:** Desenvolva um programa que mostre na tela o resultado da expressão `500 + 450 + 400 + 350 + 300 + ... + 50 + 0`.
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int soma = 0;
+
+    for (int valor = 500; valor >= 0; valor -= 50)
+        soma += valor;
+
+    cout << soma;
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Dez primeiros termos de uma PA 
+
+**Objetivo:** Desenvolva um programa que leia, nessa ordem, o primeiro termo e a razão de uma PA (Progressão Aritmética). Mostre os 10 primeiros termos, separados por espaços, e depois mostre a soma desses termos.
+
+```text
+Entrada: 3 4
+Saída: 3 7 11 15 19 23 27 31 35 39
+Soma: 210
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int primeiroTermo, razao;
+    cout << "Digite o primeiro termo e a razao: ";
+    cin >> primeiroTermo >> razao;
+
+    int termo = primeiroTermo;
+    int soma = 0;
+
+    for (int i = 0; i < 10; i++)
+    {
+        cout << termo << " ";
+        soma += termo;
+        termo += razao;
+    }
+
+    cout << "\nSoma: " << soma;
+}
+```
+
+</details>
+
+---
+
+### Exercício 10: Dez primeiros termos de Fibonacci 
+
+**Objetivo:** Faça um programa que mostre os 10 primeiros termos da Sequência de Fibonacci, começando por `1 1`. Cada termo seguinte deve ser obtido pela soma dos dois termos anteriores:
+
+```
+1 1 2 3 5 8 13 21 ...
+```
+
+<details>
+<summary>Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    int anterior = 1;
+    int atual = 1;
+
+    for (int i = 0; i < 10; i++)
+    {
+        cout << anterior << " ";
+
+        int proximo = anterior + atual;
+        anterior = atual;
+        atual = proximo;
+    }
+}
+```
+
+</details>

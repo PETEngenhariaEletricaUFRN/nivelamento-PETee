@@ -4,8 +4,1193 @@ slug: /fundamentos-programacao/modularizacao
 
 # Modularização
 
-Exercícios sobre organização de programas em funções e módulos.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+1. IDE C++ Online/Local
 
-Adicione aqui os exercícios deste submódulo.
+## 📝 Lista de Exercícios
+
+### Exercício 1: Gerador de mensagem decorada
+
+**Objetivo:** Crie uma função `void gerador()` que mostre a mensagem `Olá, Mundo!` entre duas linhas decorativas. Chame a função a partir da `main`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void gerador() {
+    cout << "+-------=======------+\n";
+    cout << " Olá, Mundo!\n";
+    cout << "+-------=======------+\n";
+}
+
+int main() {
+    gerador();
+}
+```
+
+</details>
+
+---
+
+### Exercício 2: Gerador de mensagem personalizada
+
+**Objetivo:** Crie uma função `void gerador(string mensagem)` que receba uma mensagem como parâmetro e a mostre entre duas linhas decorativas.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+void gerador(string mensagem) {
+    cout << "+-------=======------+\n";
+    cout << ' ' << mensagem << '\n';
+    cout << "+-------=======------+\n";
+}
+
+int main() {
+    string mensagem;
+    cout << "Digite a mensagem: ";
+    getline(cin, mensagem);
+    gerador(mensagem);
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Repetição de mensagem com função
+
+**Objetivo:** Crie uma função `void gerador(string mensagem, int repeticoes)` que mostre uma mensagem personalizada a quantidade de vezes informada.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+void gerador(string mensagem, int repeticoes) {
+    cout << "+-------=======------+\n";
+    for (int i = 0; i < repeticoes; ++i) {
+        cout << ' ' << mensagem << '\n';
+    }
+    cout << "+-------=======------+\n";
+}
+
+int main() {
+    string mensagem;
+    int repeticoes;
+    cout << "Digite a mensagem: ";
+    getline(cin, mensagem);
+    cout << "Digite a quantidade de repeticoes: ";
+    cin >> repeticoes;
+    gerador(mensagem, repeticoes);
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Soma de dois valores com função `void`
+
+**Objetivo:** Leia dois valores e passe-os para uma função `void somador(double primeiro, double segundo)`, que deve calcular e mostrar a soma.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void somador(double primeiro, double segundo) {
+    cout << "Soma: " << primeiro + segundo << '\n';
+}
+
+int main() {
+    double primeiro;
+    double segundo;
+
+    cout << "Digite o primeiro valor: ";
+    cin >> primeiro;
+    cout << "Digite o segundo valor: ";
+    cin >> segundo;
+    somador(primeiro, segundo);
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Verificação de paridade
+
+**Objetivo:** Leia um número inteiro e passe-o para uma função `void parOuImpar(int numero)`, que deve informar se ele é par ou ímpar.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void parOuImpar(int numero) {
+    if (numero % 2 == 0) {
+        cout << "O numero e PAR.\n";
+    } else {
+        cout << "O numero e IMPAR.\n";
+    }
+}
+
+int main() {
+    int numero;
+    cout << "Digite um numero inteiro: ";
+    cin >> numero;
+    parOuImpar(numero);
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Contagem com início, fim e incremento
+
+**Objetivo:** Crie uma função `void contador(int inicio, int fim, int incremento)` que mostre uma contagem a partir do início, respeitando o fim e o incremento informados.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void contador(int inicio, int fim, int incremento) {
+    if (incremento <= 0) {
+        cout << "O incremento deve ser positivo.\n";
+        return;
+    }
+
+    for (int valor = inicio; valor <= fim; valor += incremento) {
+        cout << valor << " >> ";
+    }
+    cout << "FIM\n";
+}
+
+int main() {
+    int inicio;
+    int fim;
+    int incremento;
+
+    cout << "Digite o inicio da contagem: ";
+    cin >> inicio;
+    cout << "Digite o fim da contagem: ";
+    cin >> fim;
+    cout << "Digite o incremento: ";
+    cin >> incremento;
+    contador(inicio, fim, incremento);
+}
+```
+
+</details>
+
+---
+
+### Exercício 7: Exibição de termos de Fibonacci
+
+**Objetivo:** Crie uma função `void fibonacci(int termos)` que receba a quantidade de termos e mostre essa quantidade da sequência iniciada por `1, 1`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+void fibonacci(int termos) {
+    int primeiro = 1;
+    int segundo = 1;
+
+    for (int i = 0; i < termos; ++i) {
+        cout << primeiro << " >> ";
+        int proximo = primeiro + segundo;
+        primeiro = segundo;
+        segundo = proximo;
+    }
+    cout << "FIM\n";
+}
+
+int main() {
+    int termos;
+    cout << "Digite a quantidade de termos de Fibonacci: ";
+    cin >> termos;
+
+    if (termos <= 0) {
+        cout << "A quantidade deve ser positiva.\n";
+    } else {
+        fibonacci(termos);
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Soma com função de retorno
+
+**Objetivo:** Leia dois valores e crie uma função `double somador(double primeiro, double segundo)` que retorne a soma para a função `main`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+double somador(double primeiro, double segundo) {
+    return primeiro + segundo;
+}
+
+int main() {
+    double primeiro;
+    double segundo;
+
+    cout << "Digite o primeiro valor: ";
+    cin >> primeiro;
+    cout << "Digite o segundo valor: ";
+    cin >> segundo;
+    cout << "Soma: " << somador(primeiro, segundo) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Cálculo da média de duas notas
+
+**Objetivo:** Leia duas notas e crie uma função `double media(double primeira, double segunda)` que retorne a média para a função `main`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+double media(double primeira, double segunda) {
+    return (primeira + segunda) / 2.0;
+}
+
+int main() {
+    double primeira;
+    double segunda;
+
+    cout << "Digite a primeira nota: ";
+    cin >> primeira;
+    cout << "Digite a segunda nota: ";
+    cin >> segunda;
+    cout << "Media: " << media(primeira, segunda) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 10: Maior entre três valores
+
+**Objetivo:** Leia três valores e crie uma função `double maior(double primeiro, double segundo, double terceiro)` que retorne o maior deles.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+double maior(double primeiro, double segundo, double terceiro) {
+    double resultado = primeiro;
+
+    if (segundo > resultado) {
+        resultado = segundo;
+    }
+    if (terceiro > resultado) {
+        resultado = terceiro;
+    }
+    return resultado;
+}
+
+int main() {
+    double primeiro;
+    double segundo;
+    double terceiro;
+
+    cout << "Digite o primeiro valor: ";
+    cin >> primeiro;
+    cout << "Digite o segundo valor: ";
+    cin >> segundo;
+    cout << "Digite o terceiro valor: ";
+    cin >> terceiro;
+    cout << "Maior valor: " << maior(primeiro, segundo, terceiro) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 11: Soma de um intervalo
+
+**Objetivo:** Leia dois números inteiros e crie uma função `int superSomador(int inicio, int fim)` que retorne a soma de todos os valores do intervalo, incluindo os limites.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int superSomador(int inicio, int fim) {
+    if (inicio > fim) {
+        int temporario = inicio;
+        inicio = fim;
+        fim = temporario;
+    }
+
+    int soma = 0;
+    for (int valor = inicio; valor <= fim; ++valor) {
+        soma += valor;
+    }
+    return soma;
+}
+
+int main() {
+    int inicio;
+    int fim;
+
+    cout << "Digite o inicio do intervalo: ";
+    cin >> inicio;
+    cout << "Digite o fim do intervalo: ";
+    cin >> fim;
+    cout << "Soma do intervalo: " << superSomador(inicio, fim) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 12: Potência calculada por multiplicação
+
+**Objetivo:** Leia uma base e um expoente inteiro não negativo. Crie uma função `double potencia(double base, int expoente)` que calcule a potência usando um laço, sem usar `pow`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+using namespace std;
+
+double potencia(double base, int expoente) {
+    double resultado = 1;
+
+    for (int i = 0; i < expoente; ++i) {
+        resultado *= base;
+    }
+    return resultado;
+}
+
+int main() {
+    double base;
+    int expoente;
+
+    cout << "Digite a base: ";
+    cin >> base;
+    cout << "Digite um expoente inteiro nao negativo: ";
+    cin >> expoente;
+
+    if (expoente < 0) {
+        cout << "O expoente deve ser nao negativo.\n";
+    } else {
+        cout << "Resultado: " << potencia(base, expoente) << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 13: Situação do aluno por média
+
+**Objetivo:** Leia duas notas, calcule a média com uma função `media()` e use uma função `string situacao(double valor)` para retornar `APROVADO`, `RECUPERACAO` ou `REPROVADO`.
+
+Considere aprovado para média maior ou igual a 7, recuperação para média maior ou igual a 5 e reprovação para média abaixo de 5.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+double media(double primeira, double segunda) {
+    return (primeira + segunda) / 2.0;
+}
+
+string situacao(double valor) {
+    if (valor >= 7) {
+        return "APROVADO";
+    }
+    if (valor >= 5) {
+        return "RECUPERACAO";
+    }
+    return "REPROVADO";
+}
+
+int main() {
+    double primeira;
+    double segunda;
+
+    cout << "Digite a primeira nota: ";
+    cin >> primeira;
+    cout << "Digite a segunda nota: ";
+    cin >> segunda;
+
+    double resultado = media(primeira, segunda);
+    cout << "Media: " << resultado << '\n';
+    cout << "Situacao: " << situacao(resultado) << '\n';
+}
+```
+
+</details>
+
+
+---
+
+### Exercício 14: Calculadora modular 
+
+**Objetivo:** Crie uma calculadora separando as operações de soma, subtração, multiplicação e divisão em um cabeçalho e um arquivo de implementação. A `main` deve solicitar dois valores e a operação escolhida.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**operacoes.h**
+
+```cpp
+#ifndef OPERACOES_H
+#define OPERACOES_H
+
+double somar(double primeiro, double segundo);
+double subtrair(double primeiro, double segundo);
+double multiplicar(double primeiro, double segundo);
+double dividir(double primeiro, double segundo);
+
+#endif
+```
+
+**operacoes.cpp**
+
+```cpp
+#include "operacoes.h"
+
+double somar(double primeiro, double segundo) {
+    return primeiro + segundo;
+}
+
+double subtrair(double primeiro, double segundo) {
+    return primeiro - segundo;
+}
+
+double multiplicar(double primeiro, double segundo) {
+    return primeiro * segundo;
+}
+
+double dividir(double primeiro, double segundo) {
+    return primeiro / segundo;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "operacoes.h"
+using namespace std;
+
+int main() {
+    double primeiro;
+    double segundo;
+    char operador;
+
+    cout << "Digite o primeiro valor: ";
+    cin >> primeiro;
+    cout << "Digite o operador (+, -, * ou /): ";
+    cin >> operador;
+    cout << "Digite o segundo valor: ";
+    cin >> segundo;
+
+    if (operador == '/' && segundo == 0) {
+        cout << "Nao e possivel dividir por zero.\n";
+    } else if (operador == '+') {
+        cout << "Resultado: " << somar(primeiro, segundo) << '\n';
+    } else if (operador == '-') {
+        cout << "Resultado: " << subtrair(primeiro, segundo) << '\n';
+    } else if (operador == '*') {
+        cout << "Resultado: " << multiplicar(primeiro, segundo) << '\n';
+    } else if (operador == '/') {
+        cout << "Resultado: " << dividir(primeiro, segundo) << '\n';
+    } else {
+        cout << "Operador invalido.\n";
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 15: Conversão de temperaturas 
+
+**Objetivo:** Separe em arquivos uma função que converta Celsius para Fahrenheit e outra que converta Fahrenheit para Celsius. A `main` deve solicitar a escala e a temperatura.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**temperaturas.h**
+
+```cpp
+#ifndef TEMPERATURAS_H
+#define TEMPERATURAS_H
+
+double celsiusParaFahrenheit(double celsius);
+double fahrenheitParaCelsius(double fahrenheit);
+
+#endif
+```
+
+**temperaturas.cpp**
+
+```cpp
+#include "temperaturas.h"
+
+double celsiusParaFahrenheit(double celsius) {
+    return celsius * 9.0 / 5.0 + 32;
+}
+
+double fahrenheitParaCelsius(double fahrenheit) {
+    return (fahrenheit - 32) * 5.0 / 9.0;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "temperaturas.h"
+using namespace std;
+
+int main() {
+    char escala;
+    double temperatura;
+
+    cout << "Digite a escala de entrada (C ou F): ";
+    cin >> escala;
+    cout << "Digite a temperatura: ";
+    cin >> temperatura;
+
+    if (escala == 'C' || escala == 'c') {
+        cout << "Em Fahrenheit: "
+             << celsiusParaFahrenheit(temperatura) << '\n';
+    } else if (escala == 'F' || escala == 'f') {
+        cout << "Em Celsius: "
+             << fahrenheitParaCelsius(temperatura) << '\n';
+    } else {
+        cout << "Escala invalida.\n";
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 16: Validação de intervalo 
+
+**Objetivo:** Crie uma função em arquivo separado que informe se um número está dentro de um intervalo inclusivo definido pelo usuário.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**validacao.h**
+
+```cpp
+#ifndef VALIDACAO_H
+#define VALIDACAO_H
+
+bool estaNoIntervalo(int valor, int minimo, int maximo);
+
+#endif
+```
+
+**validacao.cpp**
+
+```cpp
+#include "validacao.h"
+
+bool estaNoIntervalo(int valor, int minimo, int maximo) {
+    return valor >= minimo && valor <= maximo;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "validacao.h"
+using namespace std;
+
+int main() {
+    int valor;
+    int minimo;
+    int maximo;
+
+    cout << "Digite o valor: ";
+    cin >> valor;
+    cout << "Digite o limite minimo: ";
+    cin >> minimo;
+    cout << "Digite o limite maximo: ";
+    cin >> maximo;
+
+    if (estaNoIntervalo(valor, minimo, maximo)) {
+        cout << "O valor esta no intervalo.\n";
+    } else {
+        cout << "O valor esta fora do intervalo.\n";
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 17: Área e perímetro do retângulo 
+
+**Objetivo:** Organize em um cabeçalho e um arquivo de funções os cálculos da área e do perímetro de um retângulo.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**retangulo.h**
+
+```cpp
+#ifndef RETANGULO_H
+#define RETANGULO_H
+
+double calcularArea(double largura, double altura);
+double calcularPerimetro(double largura, double altura);
+
+#endif
+```
+
+**retangulo.cpp**
+
+```cpp
+#include "retangulo.h"
+
+double calcularArea(double largura, double altura) {
+    return largura * altura;
+}
+
+double calcularPerimetro(double largura, double altura) {
+    return 2 * (largura + altura);
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "retangulo.h"
+using namespace std;
+
+int main() {
+    double largura;
+    double altura;
+
+    cout << "Digite a largura: ";
+    cin >> largura;
+    cout << "Digite a altura: ";
+    cin >> altura;
+
+    cout << "Area: " << calcularArea(largura, altura) << '\n';
+    cout << "Perimetro: " << calcularPerimetro(largura, altura) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 18: Fatorial e combinação de funções 
+
+**Objetivo:** Crie uma função `fatorial` em um arquivo separado e use-a na `main` para calcular o fatorial de um número informado pelo usuário.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**matematica.h**
+
+```cpp
+#ifndef MATEMATICA_H
+#define MATEMATICA_H
+
+long long fatorial(int numero);
+
+#endif
+```
+
+**matematica.cpp**
+
+```cpp
+#include "matematica.h"
+
+long long fatorial(int numero) {
+    long long resultado = 1;
+    for (int i = 2; i <= numero; ++i) {
+        resultado *= i;
+    }
+    return resultado;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "matematica.h"
+using namespace std;
+
+int main() {
+    int numero;
+    cout << "Digite um numero inteiro nao negativo: ";
+    cin >> numero;
+
+    if (numero < 0) {
+        cout << "O numero deve ser nao negativo.\n";
+    } else {
+        cout << numero << "! = " << fatorial(numero) << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 19: Maior e menor de três valores 
+
+**Objetivo:** Separe em arquivos as funções que retornam o maior e o menor entre três números informados pelo usuário.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**comparacao.h**
+
+```cpp
+#ifndef COMPARACAO_H
+#define COMPARACAO_H
+
+double maiorDeTres(double primeiro, double segundo, double terceiro);
+double menorDeTres(double primeiro, double segundo, double terceiro);
+
+#endif
+```
+
+**comparacao.cpp**
+
+```cpp
+#include "comparacao.h"
+
+double maiorDeTres(double primeiro, double segundo, double terceiro) {
+    double maior = primeiro;
+    if (segundo > maior) {
+        maior = segundo;
+    }
+    if (terceiro > maior) {
+        maior = terceiro;
+    }
+    return maior;
+}
+
+double menorDeTres(double primeiro, double segundo, double terceiro) {
+    double menor = primeiro;
+    if (segundo < menor) {
+        menor = segundo;
+    }
+    if (terceiro < menor) {
+        menor = terceiro;
+    }
+    return menor;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "comparacao.h"
+using namespace std;
+
+int main() {
+    double primeiro;
+    double segundo;
+    double terceiro;
+
+    cout << "Digite o primeiro valor: ";
+    cin >> primeiro;
+    cout << "Digite o segundo valor: ";
+    cin >> segundo;
+    cout << "Digite o terceiro valor: ";
+    cin >> terceiro;
+
+    cout << "Maior: " << maiorDeTres(primeiro, segundo, terceiro) << '\n';
+    cout << "Menor: " << menorDeTres(primeiro, segundo, terceiro) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 20: Conversor de moedas 
+
+**Objetivo:** Crie funções separadas para converter reais em dólares e dólares em reais. Solicite ao usuário o sentido da conversão e o valor.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**moedas.h**
+
+```cpp
+#ifndef MOEDAS_H
+#define MOEDAS_H
+
+double reaisParaDolares(double reais, double cotacao);
+double dolaresParaReais(double dolares, double cotacao);
+
+#endif
+```
+
+**moedas.cpp**
+
+```cpp
+#include "moedas.h"
+
+double reaisParaDolares(double reais, double cotacao) {
+    return reais / cotacao;
+}
+
+double dolaresParaReais(double dolares, double cotacao) {
+    return dolares * cotacao;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "moedas.h"
+using namespace std;
+
+int main() {
+    char direcao;
+    double valor;
+    double cotacao;
+
+    cout << "Digite R para reais ou D para dolares: ";
+    cin >> direcao;
+    cout << "Digite o valor: ";
+    cin >> valor;
+    cout << "Digite a cotacao do dolar em reais: ";
+    cin >> cotacao;
+
+    if (cotacao <= 0) {
+        cout << "A cotacao deve ser positiva.\n";
+    } else if (direcao == 'R' || direcao == 'r') {
+        cout << "Valor em dolares: "
+             << reaisParaDolares(valor, cotacao) << '\n';
+    } else if (direcao == 'D' || direcao == 'd') {
+        cout << "Valor em reais: "
+             << dolaresParaReais(valor, cotacao) << '\n';
+    } else {
+        cout << "Direcao invalida.\n";
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 21: Média e situação de uma turma 
+
+**Objetivo:** Separe em arquivos as funções que calculam a média de três notas e informam a situação do aluno. Leia as notas na `main`.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**boletim.h**
+
+```cpp
+#ifndef BOLETIM_H
+#define BOLETIM_H
+
+#include <string>
+using namespace std;
+
+double calcularMedia(double primeira, double segunda, double terceira);
+string obterSituacao(double media);
+
+#endif
+```
+
+**boletim.cpp**
+
+```cpp
+#include <string>
+#include "boletim.h"
+using namespace std;
+
+double calcularMedia(double primeira, double segunda, double terceira) {
+    return (primeira + segunda + terceira) / 3.0;
+}
+
+string obterSituacao(double media) {
+    if (media >= 7) {
+        return "APROVADO";
+    }
+    if (media >= 5) {
+        return "RECUPERACAO";
+    }
+    return "REPROVADO";
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include <string>
+#include "boletim.h"
+using namespace std;
+
+int main() {
+    double primeira;
+    double segunda;
+    double terceira;
+
+    cout << "Digite a primeira nota: ";
+    cin >> primeira;
+    cout << "Digite a segunda nota: ";
+    cin >> segunda;
+    cout << "Digite a terceira nota: ";
+    cin >> terceira;
+
+    double media = calcularMedia(primeira, segunda, terceira);
+    cout << "Media: " << media << '\n';
+    cout << "Situacao: " << obterSituacao(media) << '\n';
+}
+```
+
+</details>
+
+---
+
+### Exercício 22: Área de círculo e volume de esfera 
+
+**Objetivo:** Crie um módulo matemático com funções para calcular a área de um círculo e o volume de uma esfera a partir do raio informado pelo usuário.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**geometria.h**
+
+```cpp
+#ifndef GEOMETRIA_H
+#define GEOMETRIA_H
+
+double areaCirculo(double raio);
+double volumeEsfera(double raio);
+
+#endif
+```
+
+**geometria.cpp**
+
+```cpp
+#include "geometria.h"
+
+double areaCirculo(double raio) {
+    const double pi = 3.141592653589793;
+    return pi * raio * raio;
+}
+
+double volumeEsfera(double raio) {
+    const double pi = 3.141592653589793;
+    return 4.0 * pi * raio * raio * raio / 3.0;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "geometria.h"
+using namespace std;
+
+int main() {
+    double raio;
+    cout << "Digite o raio: ";
+    cin >> raio;
+
+    if (raio < 0) {
+        cout << "O raio nao pode ser negativo.\n";
+    } else {
+        cout << "Area do circulo: " << areaCirculo(raio) << '\n';
+        cout << "Volume da esfera: " << volumeEsfera(raio) << '\n';
+    }
+}
+```
+
+</details>
+
+---
+
+### Exercício 23: Menu de operações em módulos 
+
+**Objetivo:** Crie um programa com um menu na `main` e funções de operações em arquivos separados. O usuário deve poder repetir operações até escolher sair.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+**menu.h**
+
+```cpp
+#ifndef MENU_H
+#define MENU_H
+
+void mostrarMenu();
+int lerOpcao();
+
+#endif
+```
+
+**menu.cpp**
+
+```cpp
+#include <iostream>
+#include "menu.h"
+using namespace std;
+
+void mostrarMenu() {
+    cout << "\n1 - Somar\n";
+    cout << "2 - Subtrair\n";
+    cout << "3 - Multiplicar\n";
+    cout << "0 - Sair\n";
+}
+
+int lerOpcao() {
+    int opcao;
+    cout << "Escolha uma opcao: ";
+    cin >> opcao;
+    return opcao;
+}
+```
+
+**operacoes.h**
+
+```cpp
+#ifndef OPERACOES_MENU_H
+#define OPERACOES_MENU_H
+
+double somarValores(double primeiro, double segundo);
+double subtrairValores(double primeiro, double segundo);
+double multiplicarValores(double primeiro, double segundo);
+
+#endif
+```
+
+**operacoes.cpp**
+
+```cpp
+#include "operacoes.h"
+
+double somarValores(double primeiro, double segundo) {
+    return primeiro + segundo;
+}
+
+double subtrairValores(double primeiro, double segundo) {
+    return primeiro - segundo;
+}
+
+double multiplicarValores(double primeiro, double segundo) {
+    return primeiro * segundo;
+}
+```
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include "menu.h"
+#include "operacoes.h"
+using namespace std;
+
+int main() {
+    int opcao;
+
+    do {
+        mostrarMenu();
+        opcao = lerOpcao();
+
+        if (opcao >= 1 && opcao <= 3) {
+            double primeiro;
+            double segundo;
+            cout << "Digite o primeiro valor: ";
+            cin >> primeiro;
+            cout << "Digite o segundo valor: ";
+            cin >> segundo;
+
+            if (opcao == 1) {
+                cout << "Resultado: "
+                     << somarValores(primeiro, segundo) << '\n';
+            } else if (opcao == 2) {
+                cout << "Resultado: "
+                     << subtrairValores(primeiro, segundo) << '\n';
+            } else {
+                cout << "Resultado: "
+                     << multiplicarValores(primeiro, segundo) << '\n';
+            }
+        } else if (opcao != 0) {
+            cout << "Opcao invalida.\n";
+        }
+    } while (opcao != 0);
+}
+```
+
+</details>
+
+---
