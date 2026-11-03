@@ -1,11 +1,743 @@
 ---
-slug: /programacao-hardware/programacao-nao-bloqueante
+id: exercicios-programacao-nao-bloqueante
+title: Exercícios - Programação Não Bloqueante
+sidebar_label: 3. Programação Não Bloqueante
+sidebar_position: 3
+description: Lista de exercícios sobre programação não bloqueante no ESP32, com millis, máquinas de estado, debounce, filas de eventos e leitura periódica de sensores e displays.
 ---
 
-# Programação Não Bloqueante
+Esta lista tem **11 exercícios** sobre programação não bloqueante. A ideia central é nunca parar o processador esperando: o `loop()` precisa continuar rodando enquanto LEDs piscam, botões são lidos, sensores são consultados e displays são atualizados.
 
-Exercícios sobre temporização e execução de tarefas sem bloquear o programa.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+- **ESP32 DEVKIT** (estoque: 5) e cabo USB
+- **Arduino IDE** ou **PlatformIO** com o pacote *esp32 by Espressif* (versão 3.x)
+- **Biblioteca DHT sensor library** (Adafruit), para o exercício 6
+- **Biblioteca LiquidCrystal** (já incluída na IDE), para os exercícios 5 e 11
+- Protoboard, jumpers, LEDs, botões e resistores
 
-Adicione aqui os exercícios deste submódulo.
+:::note
+**Legenda de estoque.** ✅ indica que o item já está no laboratório, com a quantidade entre parênteses. 🛒 indica que ainda precisa ser comprado.
+:::
+
+:::tip
+Use `millis()` para medir intervalos, e não `delay()`. Em vez de perguntar "já passou um segundo?" dentro de um `delay()`, verifique a diferença entre o tempo atual e o último evento em cada volta do `loop()`.
+:::
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Piscando um LED sem delay
+
+**Objetivo:** substituir `delay()` por uma verificação de tempo, para que o `loop()` continue livre para outras tarefas.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Guarde o instante da última troca de estado em uma variável.
+2. Em cada volta do `loop()`, compare `millis()` com esse instante.
+3. Inverta o LED a cada 500 ms, sem usar `delay()`. Imprima no monitor serial a palavra `tick` a cada 2 segundos, para mostrar que o programa continua rodando.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_LED = 26;
+const unsigned long INTERVALO = 500;
+
+unsigned long ultimaTroca = 0;
+unsigned long ultimoTick = 0;
+bool estadoLed = false;
+
+void setup() {
+  pinMode(PINO_LED, OUTPUT);
+  Serial.begin(115200);
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  if (agora - ultimaTroca >= INTERVALO) {
+    ultimaTroca = agora;
+    estadoLed = !estadoLed;
+    digitalWrite(PINO_LED, estadoLed);
+  }
+
+  if (agora - ultimoTick >= 2000) {
+    ultimoTick = agora;
+    Serial.println("tick");
+  }
+}
+```
+
+A subtração `agora - ultimaTroca` continua correta mesmo quando `millis()` volta a zero após cerca de 49 dias, porque a aritmética de inteiros sem sinal lida naturalmente com o estouro.
+
+</details>
+
+---
+
+### Exercício 2: Dois LEDs com tempos independentes
+
+**Objetivo:** controlar duas tarefas simultâneas com intervalos diferentes, sem que uma interfira na outra.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), LED vermelho ✅ (45) × 1, LED verde ✅ (40) × 1, resistores 220Ω ✅ (127) × 2.
+
+**Roteiro:**
+
+1. O LED vermelho deve piscar a cada 300 ms.
+2. O LED verde deve piscar a cada 1000 ms.
+3. Observe que as duas tarefas acontecem sem atrasar uma à outra.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+struct Pisca {
+  int pino;
+  unsigned long intervalo;
+  unsigned long ultimo;
+  bool estado;
+};
+
+Pisca leds[2] = {
+  {26, 300, 0, false},    // vermelho
+  {27, 1000, 0, false}    // verde
+};
+
+void setup() {
+  for (auto &p : leds) pinMode(p.pino, OUTPUT);
+}
+
+void loop() {
+  unsigned long agora = millis();
+  for (auto &p : leds) {
+    if (agora - p.ultimo >= p.intervalo) {
+      p.ultimo = agora;
+      p.estado = !p.estado;
+      digitalWrite(p.pino, p.estado);
+    }
+  }
+}
+```
+
+Essa estrutura de dados (um vetor de tarefas) é a base para escalar o número de tarefas sem aumentar a complexidade do `loop()`.
+
+</details>
+
+---
+
+### Exercício 3: Debounce não bloqueante
+
+**Objetivo:** tratar o *bouncing* de um botão sem usar `delay()`, aceitando a mudança de estado somente depois de um tempo estável.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), botão sem retenção ✅ (55), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o botão em GPIO 4 com pull-up interno.
+2. Quando o estado do botão mudar, anote o instante e espere 50 ms sem bloquear.
+3. Só aceite a mudança se o estado continuar o mesmo depois desse tempo. Alterne o LED a cada pressionamento válido.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_BOTAO = 4;
+const int PINO_LED = 26;
+const unsigned long DEBOUNCE_MS = 50;
+
+bool estadoEstavel = HIGH;
+bool ultimaLeitura = HIGH;
+unsigned long tempoMudanca = 0;
+bool ledLigado = false;
+
+void setup() {
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_LED, OUTPUT);
+}
+
+void loop() {
+  bool leitura = digitalRead(PINO_BOTAO);
+
+  if (leitura != ultimaLeitura) {
+    tempoMudanca = millis();           // começou a mudar: reinicia a contagem
+    ultimaLeitura = leitura;
+  }
+
+  if (millis() - tempoMudanca >= DEBOUNCE_MS && leitura != estadoEstavel) {
+    estadoEstavel = leitura;
+    if (estadoEstavel == LOW) {        // pressionado
+      ledLigado = !ledLigado;
+      digitalWrite(PINO_LED, ledLigado);
+    }
+  }
+}
+```
+
+Como o `loop()` não para, o programa continua lendo outras entradas enquanto o botão se estabiliza.
+
+</details>
+
+---
+
+### Exercício 4: Máquina de estados de um semáforo
+
+**Objetivo:** organizar o comportamento de um sistema em estados e transições, em vez de sequências fixas de `delay()`.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), LED vermelho ✅ (45), LED amarelo ✅ (42), LED verde ✅ (40), resistores 220Ω ✅ (127) × 3. Opcional: módulo semáforo ✅ (1), se você preferir usar o módulo pronto (confira a pinagem no datasheet).
+
+**Roteiro:**
+
+1. Defina três estados: VERDE (5 s), AMARELO (2 s) e VERMELHO (4 s).
+2. Em cada volta do `loop()`, verifique se o tempo do estado atual já passou. Se passou, avance para o próximo.
+3. Ao trocar de estado, ligue o LED correspondente e apague os outros.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+enum Estado { VERDE, AMARELO, VERMELHO };
+
+const int PIN_VERDE = 26, PIN_AMARELO = 27, PIN_VERMELHO = 14;
+const unsigned long DURACAO[3] = {5000, 2000, 4000};
+
+Estado estadoAtual = VERDE;
+unsigned long inicioEstado = 0;
+
+void aplicarSaidas() {
+  digitalWrite(PIN_VERDE, estadoAtual == VERDE);
+  digitalWrite(PIN_AMARELO, estadoAtual == AMARELO);
+  digitalWrite(PIN_VERMELHO, estadoAtual == VERMELHO);
+}
+
+void setup() {
+  pinMode(PIN_VERDE, OUTPUT);
+  pinMode(PIN_AMARELO, OUTPUT);
+  pinMode(PIN_VERMELHO, OUTPUT);
+  inicioEstado = millis();
+  aplicarSaidas();
+}
+
+void loop() {
+  if (millis() - inicioEstado >= DURACAO[estadoAtual]) {
+    estadoAtual = (Estado)((estadoAtual + 1) % 3);
+    inicioEstado = millis();
+    aplicarSaidas();
+  }
+}
+```
+
+Uma máquina de estados torna explícitas as regras de transição. Isso facilita testar cada estado isoladamente e adicionar novos estados, como um modo noturno.
+
+</details>
+
+---
+
+### Exercício 5: Cronômetro no display LCD 16x2
+
+**Objetivo:** atualizar um display sem bloquear o programa, e controlar o cronômetro com botões de iniciar e pausar.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), display LCD 16x2 (HC 1624-B ✅ (3) ou 1602 ✅ (3)), potenciômetro de contraste ✅ (B10KΩ ✅ (9)), botão sem retenção ✅ (55) × 2, resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o LCD em modo de 4 bits. Use o potenciômetro para ajustar o contraste.
+2. Mostre o tempo decorrido no formato `mm:ss.d`, atualizando a cada 100 ms.
+3. Um botão inicia e pausa o cronômetro. O outro zera o tempo.
+
+:::warning
+Escrever no LCD leva algum tempo. Não atualize o display em toda volta do `loop()`, pois isso pode deixar o restante do sistema lento. Use um intervalo de atualização.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(21, 22, 16, 17, 18, 19);   // RS, E, D4, D5, D6, D7
+const int BTN_START = 32;
+const int BTN_RESET = 33;
+
+bool rodando = false;
+unsigned long acumulado = 0;
+unsigned long inicioParcial = 0;
+unsigned long ultimaAtualizacao = 0;
+bool anteriorStart = HIGH, anteriorReset = HIGH;
+
+void setup() {
+  pinMode(BTN_START, INPUT_PULLUP);
+  pinMode(BTN_RESET, INPUT_PULLUP);
+  lcd.begin(16, 2);
+}
+
+void loop() {
+  bool start = digitalRead(BTN_START);
+  bool reset = digitalRead(BTN_RESET);
+
+  if (anteriorStart == HIGH && start == LOW) {
+    rodando = !rodando;
+    if (rodando) inicioParcial = millis();
+    else acumulado += millis() - inicioParcial;
+  }
+  if (anteriorReset == HIGH && reset == LOW) {
+    rodando = false;
+    acumulado = 0;
+  }
+  anteriorStart = start;
+  anteriorReset = reset;
+
+  if (millis() - ultimaAtualizacao >= 100) {
+    ultimaAtualizacao = millis();
+    unsigned long total = acumulado + (rodando ? millis() - inicioParcial : 0);
+    unsigned long decimos = total / 100;
+    lcd.setCursor(0, 0);
+    lcd.printf("%02lu:%02lu.%lu",
+               decimos / 600, (decimos / 10) % 60, decimos % 10);
+  }
+}
+```
+
+Observe que o cronômetro continua correto mesmo que o `loop()` demore a dar a volta, porque o tempo é calculado a partir de `millis()`, e não pela soma de intervalos de atualização.
+
+</details>
+
+---
+
+### Exercício 6: Leitura periódica do DHT11 sem bloquear
+
+**Objetivo:** ler um sensor lento sem travar o restante do programa, e disparar um alerta quando um limite for ultrapassado.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor DHT11 ✅ (11), LED vermelho ✅ (45), resistores 10kΩ ✅ (111) (pull-up do DHT11, se o módulo não tiver), resistor 220Ω ✅ (127), buzzer ativo ✅ (8).
+
+**Roteiro:**
+
+1. Ligue o DHT11 em GPIO 15 e configure a biblioteca DHT sensor library.
+2. Leia a temperatura e a umidade a cada 2 segundos. O DHT11 não aceita leituras mais rápidas que isso.
+3. Acenda o LED e toque o buzzer se a temperatura passar de 30 °C, sem parar o programa para isso.
+
+:::note
+O DHT11 tem resolução baixa, de 1 °C e 1% de umidade, e precisão de cerca de ±2 °C. Compare com o DS18B20 no submódulo de Sensores.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <DHT.h>
+
+const int PINO_DHT = 15;
+const int PINO_LED = 26;
+const int PINO_BUZZER = 25;
+const float LIMITE_C = 30.0;
+
+DHT dht(PINO_DHT, DHT11);
+unsigned long ultimaLeitura = 0;
+float temperatura = NAN, umidade = NAN;
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  pinMode(PINO_LED, OUTPUT);
+  pinMode(PINO_BUZZER, OUTPUT);
+}
+
+void loop() {
+  if (millis() - ultimaLeitura >= 2000) {
+    ultimaLeitura = millis();
+    temperatura = dht.readTemperature();
+    umidade = dht.readHumidity();
+
+    if (isnan(temperatura) || isnan(umidade)) {
+      Serial.println("Falha na leitura");
+      return;
+    }
+    Serial.printf("T=%.1f C  U=%.0f %%\n", temperatura, umidade);
+  }
+
+  bool alerta = !isnan(temperatura) && temperatura > LIMITE_C;
+  digitalWrite(PINO_LED, alerta);
+  digitalWrite(PINO_BUZZER, alerta);
+}
+```
+
+Ao verificar `isnan`, o programa evita usar uma leitura inválida. Isso é importante em sensores que podem falhar ocasionalmente.
+
+</details>
+
+---
+
+### Exercício 7: Teclado matricial com senha, sem bloquear
+
+**Objetivo:** ler teclas de um teclado matricial em paralelo com outras tarefas, e validar uma sequência de teclas.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), teclado matricial 4x4 ✅ (6), LED verde ✅ (40), LED vermelho ✅ (45), resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Varra o teclado em intervalos de 10 ms, sem laço de espera.
+2. Guarde as teclas digitadas em um vetor de 4 caracteres.
+3. Ao completar 4 teclas, compare com a senha `1234`. Acenda o LED verde se estiver certo e o vermelho se estiver errado.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int LINHAS[4] = {13, 12, 14, 27};
+const int COLUNAS[4] = {26, 25, 33, 32};
+const char TECLAS[4][4] = {
+  {'1','2','3','A'}, {'4','5','6','B'},
+  {'7','8','9','C'}, {'*','0','#','D'}
+};
+const char SENHA[] = "1234";
+
+char digitadas[5] = {0};
+int quantidade = 0;
+unsigned long ultimaVarredura = 0;
+bool teclaAnterior = false;
+
+char lerTecla() {
+  for (int l = 0; l < 4; l++) {
+    digitalWrite(LINHAS[l], LOW);
+    for (int c = 0; c < 4; c++) {
+      if (digitalRead(COLUNAS[c]) == LOW) {
+        digitalWrite(LINHAS[l], HIGH);
+        return TECLAS[l][c];
+      }
+    }
+    digitalWrite(LINHAS[l], HIGH);
+  }
+  return 0;
+}
+
+void setup() {
+  Serial.begin(115200);
+  for (int i = 0; i < 4; i++) {
+    pinMode(LINHAS[i], OUTPUT);
+    digitalWrite(LINHAS[i], HIGH);
+    pinMode(COLUNAS[i], INPUT_PULLUP);
+  }
+  pinMode(19, OUTPUT);       // LED verde
+}
+
+void loop() {
+  if (millis() - ultimaVarredura < 10) return;
+  ultimaVarredura = millis();
+
+  char t = lerTecla();
+  bool pressionada = (t != 0);
+  if (pressionada && !teclaAnterior) {          // borda: tecla recém pressionada
+    digitadas[quantidade++] = t;
+    if (quantidade == 4) {
+      bool certo = (strncmp(digitadas, SENHA, 4) == 0);
+      Serial.println(certo ? "Acesso liberado" : "Senha errada");
+      quantidade = 0;
+    }
+  }
+  teclaAnterior = pressionada;
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Fila de eventos com buzzer e botão
+
+**Objetivo:** capturar eventos com rapidez (um botão) e tratá-los depois, em ordem, com uma fila circular.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), botão sem retenção ✅ (55), buzzer ativo ✅ (8), transistor BC547 ✅ (21), resistor 1kΩ ✅ (199), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Cada pressionamento do botão cria um evento e o coloca em uma fila circular de tamanho 8.
+2. Em cada volta do `loop()`, o programa retira um evento da fila, se houver, e toca o buzzer por 100 ms.
+3. Pressione o botão rapidamente várias vezes e observe que os eventos são tratados em ordem, sem perda.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_BOTAO = 4;
+const int PINO_BUZZER = 26;
+const int TAMANHO = 8;
+
+int fila[TAMANHO];
+int inicio = 0, fim = 0, quantidade = 0;
+
+bool enfileirar(int evento) {
+  if (quantidade == TAMANHO) return false;   // cheia: descarta
+  fila[fim] = evento;
+  fim = (fim + 1) % TAMANHO;
+  quantidade++;
+  return true;
+}
+
+bool desenfileirar(int &evento) {
+  if (quantidade == 0) return false;
+  evento = fila[inicio];
+  inicio = (inicio + 1) % TAMANHO;
+  quantidade--;
+  return true;
+}
+
+bool anteriorBotao = HIGH;
+int contadorEventos = 0;
+unsigned long inicioBuzzer = 0;
+bool buzzerLigado = false;
+
+void setup() {
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_BUZZER, OUTPUT);
+  Serial.begin(115200);
+}
+
+void loop() {
+  bool atual = digitalRead(PINO_BOTAO);
+  if (anteriorBotao == HIGH && atual == LOW) {
+    enfileirar(++contadorEventos);
+  }
+  anteriorBotao = atual;
+
+  if (!buzzerLigado) {
+    int evento;
+    if (desenfileirar(evento)) {
+      Serial.printf("Processando evento %d\n", evento);
+      digitalWrite(PINO_BUZZER, HIGH);
+      buzzerLigado = true;
+      inicioBuzzer = millis();
+    }
+  } else if (millis() - inicioBuzzer >= 100) {
+    digitalWrite(PINO_BUZZER, LOW);
+    buzzerLigado = false;
+  }
+}
+```
+
+A fila desacopla a captura do evento do seu tratamento. Quando a fila enche, o programa descarta novos eventos. Em sistemas reais, é preciso decidir se é melhor descartar o mais antigo ou o mais novo.
+
+</details>
+
+---
+
+### Exercício 9: Servo em varredura com medição de distância
+
+**Objetivo:** combinar um atuador que se move com a leitura de um sensor de distância, sem bloquear nenhum dos dois.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), servomotor ✅ (10), sensor HC-SR04 ✅ (8), divisor de tensão para o ECHO (resistores 1kΩ ✅ (199) e 2kΩ ✅ (19)), fonte externa 5 V para o servo.
+
+**Roteiro:**
+
+1. O servo deve varrer de 0 a 180 graus e voltar, passo a passo, a cada 30 ms.
+2. Em paralelo, dispare uma medição de distância a cada 100 ms.
+3. Imprima o ângulo e a distância no monitor serial.
+
+:::danger
+O pino ECHO do HC-SR04 sai em 5 V. Use o divisor de tensão para reduzir a tensão para cerca de 3,3 V antes do pino do ESP32. Aplicar 5 V diretamente pode danificar o microcontrolador.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_SERVO = 18;
+const int PINO_TRIG = 23;
+const int PINO_ECHO = 19;
+
+int angulo = 0;
+int passo = 2;
+unsigned long ultimoMovimento = 0;
+unsigned long ultimaMedicao = 0;
+unsigned long inicioEco = 0;
+float distanciaCm = -1;
+bool esperandoEco = false;
+
+uint32_t duty(int a) {
+  float pulso = 1000.0 + (a / 180.0) * 1000.0;
+  return (uint32_t)((pulso / 20000.0) * 65535);
+}
+
+void setup() {
+  Serial.begin(115200);
+  ledcAttach(PINO_SERVO, 50, 16);
+  pinMode(PINO_TRIG, OUTPUT);
+  pinMode(PINO_ECHO, INPUT);
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  if (agora - ultimoMovimento >= 30) {
+    ultimoMovimento = agora;
+    angulo += passo;
+    if (angulo >= 180 || angulo <= 0) passo = -passo;
+    ledcWrite(PINO_SERVO, duty(angulo));
+  }
+
+  if (!esperandoEco && agora - ultimaMedicao >= 100) {
+    ultimaMedicao = agora;
+    digitalWrite(PINO_TRIG, LOW);
+    delayMicroseconds(2);
+    digitalWrite(PINO_TRIG, HIGH);
+    delayMicroseconds(10);             // pulso de disparo de 10 us
+    digitalWrite(PINO_TRIG, LOW);
+    esperandoEco = true;
+    inicioEco = 0;
+  }
+
+  // Máquina de leitura do eco, sem bloquear
+  if (esperandoEco) {
+    if (digitalRead(PINO_ECHO) == HIGH && inicioEco == 0) {
+      inicioEco = micros();
+    } else if (digitalRead(PINO_ECHO) == LOW && inicioEco != 0) {
+      unsigned long duracao = micros() - inicioEco;
+      distanciaCm = duracao * 0.0343 / 2.0;
+      Serial.printf("Angulo=%d  Distancia=%.1f cm\n", angulo, distanciaCm);
+      esperandoEco = false;
+    }
+    if (agora - ultimaMedicao > 50) esperandoEco = false;   // tempo limite
+  }
+}
+```
+
+Esse trecho lê o eco aos poucos, em cada volta do `loop()`. Mesmo sem interrupções, o servo continua se movendo. Na próxima lista, o mesmo problema é resolvido com interrupções.
+
+</details>
+
+---
+
+### Exercício 10: Contador de 2 dígitos com registrador 74HC595
+
+**Objetivo:** multiplexar dois displays de 7 segmentos sem bloquear, atualizando um dígito de cada vez em alta frequência.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), display de 7 segmentos cátodo comum ✅ (22) × 2, CI 74HC595 ✅ (1), transistores BC548 ✅ (9) × 2 para selecionar os dígitos, resistores 220Ω ✅ (127) e 1kΩ ✅ (199).
+
+**Roteiro:**
+
+1. Use o 74HC595 para enviar o padrão de segmentos e dois pinos do ESP32 para ligar um dígito de cada vez, com transistores.
+2. Alterne os dígitos a cada 5 ms, sem `delay()`.
+3. Conte de 0 a 99 a cada segundo, usando `millis()` para o contador.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const uint8_t SEGMENTOS[10] = {
+  0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F
+};
+const int PIN_DS = 13, PIN_SHCP = 14, PIN_STCP = 27;
+const int PIN_DIG_DEZ = 26, PIN_DIG_UNI = 25;
+
+int valor = 0;
+int digitoAtual = 0;
+unsigned long ultimoDigito = 0;
+unsigned long ultimoSegundo = 0;
+
+void mostrar(uint8_t padrao) {
+  digitalWrite(PIN_STCP, LOW);
+  shiftOut(PIN_DS, PIN_SHCP, MSBFIRST, padrao);
+  digitalWrite(PIN_STCP, HIGH);
+}
+
+void setup() {
+  pinMode(PIN_DS, OUTPUT);
+  pinMode(PIN_SHCP, OUTPUT);
+  pinMode(PIN_STCP, OUTPUT);
+  pinMode(PIN_DIG_DEZ, OUTPUT);
+  pinMode(PIN_DIG_UNI, OUTPUT);
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  if (agora - ultimoSegundo >= 1000) {
+    ultimoSegundo = agora;
+    valor = (valor + 1) % 100;
+  }
+
+  if (agora - ultimoDigito >= 5) {
+    ultimoDigito = agora;
+    digitalWrite(PIN_DIG_DEZ, LOW);
+    digitalWrite(PIN_DIG_UNI, LOW);
+    digitalWrite(digitoAtual == 0 ? PIN_DIG_DEZ : PIN_DIG_UNI, HIGH);
+    mostrar(SEGMENTOS[digitoAtual == 0 ? valor / 10 : valor % 10]);
+    digitoAtual = 1 - digitoAtual;
+  }
+}
+```
+
+A multiplexação exige que apenas um dígito esteja aceso por vez. Se a troca de padrão e a troca de dígito não forem sincronizadas, aparecem fantasmas no display.
+
+</details>
+
+---
+
+### Exercício 11: Projeto integrado: cofre com máquina de estados
+
+**Objetivo:** integrar teclado, servo, buzzer, LEDs e temporizadores em uma única máquina de estados, sem nenhum `delay()`.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), teclado matricial 4x4 ✅ (6), servomotor ✅ (10), buzzer ativo ✅ (8), LED verde ✅ (40), LED vermelho ✅ (45), display LCD 16x2 ✅ (3), resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Defina os estados: TRANCADO, DIGITANDO, ABERTO e BLOQUEADO (depois de 3 erros seguidos).
+2. Em TRANCADO, o servo fica em 0 graus. Em ABERTO, vai a 90 graus por 5 segundos e volta.
+3. Em BLOQUEADO, o buzzer toca em intervalos e o sistema ignora o teclado por 10 segundos.
+4. Mostre o estado atual no LCD, atualizando apenas quando ele mudar.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+enum Estado { TRANCADO, DIGITANDO, ABERTO, BLOQUEADO };
+
+Estado estado = TRANCADO;
+unsigned long inicioEstado = 0;
+int erros = 0;
+char digitadas[5] = {0};
+int quantidade = 0;
+const char SENHA[] = "1234";
+
+void mudarEstado(Estado novo) {
+  estado = novo;
+  inicioEstado = millis();
+  // Atualize servo, buzzer, LEDs e LCD aqui, conforme o estado
+}
+
+void verificarSenha() {
+  if (strncmp(digitadas, SENHA, 4) == 0) {
+    erros = 0;
+    mudarEstado(ABERTO);
+  } else {
+    erros++;
+    quantidade = 0;
+    mudarEstado(erros >= 3 ? BLOQUEADO : TRANCADO);
+  }
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  switch (estado) {
+    case TRANCADO:
+      // lê teclas (exercício 7) e avança para DIGITANDO
+      break;
+    case DIGITANDO:
+      // quando 4 teclas forem digitadas, chama verificarSenha()
+      break;
+    case ABERTO:
+      if (agora - inicioEstado >= 5000) mudarEstado(TRANCADO);
+      break;
+    case BLOQUEADO:
+      if (agora - inicioEstado >= 10000) {
+        erros = 0;
+        mudarEstado(TRANCADO);
+      }
+      break;
+  }
+}
+```
+
+Este projeto mostra o padrão para sistemas maiores: cada estado tem suas próprias regras, e as transições são feitas em um único lugar. Use o código como esqueleto e complete as partes marcadas com comentários.
+
+</details>

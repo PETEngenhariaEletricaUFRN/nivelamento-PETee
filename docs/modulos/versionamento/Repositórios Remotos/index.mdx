@@ -1,11 +1,681 @@
 ---
-slug: /versionamento/repositorios-remotos
+id: repositorios-remotos
+title: Repositórios Remotos
+sidebar_label: 3. Repositórios Remotos
+sidebar_position: 3
+
 ---
 
-# Repositórios Remotos
+## 🛠 Requisitos e Materiais
 
-Exercícios sobre sincronização de repositórios locais e remotos.
+- **Git** instalado (verifique com `git --version`)
+- **Compilador C** (`gcc` ou `clang`)
+- **Terminal** (Bash, PowerShell ou Git Bash)
+- **Editor de código**, como VS Code
+- Conhecimento de `add`, `commit`, `branch`, `merge` e `log`
+- **Conta no GitHub** com permissão para criar repositórios
 
-## Exercícios
+:::note
+Crie uma pasta de trabalho para estes exercícios (por exemplo, `exercicios-remotos`). Os repositórios locais de cada exercício devem ficar em pastas próprias. Os repositórios remotos serão acessados por URLs do GitHub, usando HTTPS ou SSH.
+:::
 
-Adicione aqui os exercícios deste submódulo.
+## 📝 Lista de Exercícios
+
+### Exercício 1: Criando um remoto e conectando o repositório local
+
+**Objetivo:** conectar um projeto local a um repositório criado no GitHub e conferir a configuração do remoto com `git remote add`.
+
+**Passos:**
+
+1. No GitHub, crie o repositório público `calculadora` no seu perfil. Não marque as opções de criar README, `.gitignore` ou licença, para que o histórico remoto comece vazio.
+
+2. Na página do repositório, clique em **Code**, copie a URL HTTPS e guarde-a. Ela terá um formato parecido com `https://github.com/SEU-USUARIO/calculadora.git`.
+
+3. Crie a pasta `ex01-local`, entre nela e execute `git init`.
+4. Crie `ola.c` com o código abaixo e faça o commit `feat: programa de boas-vindas`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Bem-vindo à calculadora!\n");
+    return 0;
+}
+```
+
+5. Adicione o repositório do GitHub como remoto com `git remote add origin https://github.com/SEU-USUARIO/calculadora.git`.
+6. Confira com `git remote -v`. Você deve ver as duas linhas, de busca (fetch) e de envio (push).
+
+:::tip
+O nome `origin` é apenas uma convenção. Você pode dar outro nome ao remoto, mas `origin` é o padrão usado na maioria dos projetos.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex01-local
+cd ex01-local
+git init
+# crie ola.c
+git add ola.c
+git commit -m "feat: programa de boas-vindas"
+
+git remote add origin https://github.com/SEU-USUARIO/calculadora.git
+git remote -v
+# origin  https://github.com/SEU-USUARIO/calculadora.git (fetch)
+# origin  https://github.com/SEU-USUARIO/calculadora.git (push)
+```
+
+</details>
+
+---
+
+### Exercício 2: Enviando pela primeira vez com push -u
+
+**Objetivo:** enviar a branch local ao remoto e criar a ligação entre as duas com `push -u`.
+
+**Passos:**
+
+1. Continue em `ex01-local` com o remoto configurado no exercício anterior.
+2. Envie a branch `main` com `git push -u origin main`.
+3. Execute `git status` e observe que a branch local acompanha `origin/main`.
+4. Execute `git branch -vv` e confira a ligação entre `main` e `origin/main`.
+5. Faça outro commit local, com um arquivo `soma.c` de sua escolha, e envie-o usando apenas `git push`, sem argumentos. Isso funciona porque a ligação já foi criada.
+
+:::note
+O `-u` (ou `--set-upstream`) registra qual branch remota está ligada à local. Depois disso, `git push` e `git pull` sem argumentos sabem para onde ir.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git push -u origin main
+git status                    # Your branch is up to date with 'origin/main'
+git branch -vv                # main ... [origin/main]
+
+# crie soma.c, faça o commit e envie:
+git add soma.c
+git commit -m "feat: adiciona soma"
+git push
+```
+
+</details>
+
+---
+
+### Exercício 3: Clonando um repositório
+
+**Objetivo:** obter uma cópia completa de um remoto em outra pasta e entender as branches de rastreamento (`origin/main`).
+
+**Passos:**
+
+1. Volte para a pasta de trabalho e clone o repositório do GitHub em uma nova pasta: `git clone https://github.com/SEU-USUARIO/calculadora.git ex03-clone`.
+2. Entre em `ex03-clone` e execute `git log --oneline`. O histórico completo deve estar presente.
+3. Execute `git branch -a` para ver as branches locais e as remotas (`remotes/origin/...`).
+4. Confira o remoto configurado automaticamente com `git remote -v`.
+5. Liste os arquivos com `ls` e confirme que `ola.c` e `soma.c` estão presentes.
+
+:::tip
+Ao clonar, o Git cria o remoto `origin` automaticamente, apontando para o repositório de onde você copiou. Você não precisa configurá-lo manualmente.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ..
+git clone https://github.com/SEU-USUARIO/calculadora.git ex03-clone
+cd ex03-clone
+
+git log --oneline
+git branch -a                 # * main / remotes/origin/main
+git remote -v                 # origin apontando para o GitHub
+ls                            # ola.c, soma.c
+```
+
+</details>
+
+---
+
+### Exercício 4: Buscando alterações com fetch
+
+**Objetivo:** receber as alterações do remoto sem mesclá-las ao seu trabalho, usando `git fetch`.
+
+**Preparação:** simule um colega em outra pasta: clone o repositório do GitHub em `colega`, altere `ola.c` (por exemplo, acrescentando um comentário), faça o commit `docs: comenta programa` e envie com `git push`.
+
+**Passos:**
+
+1. Volte para `ex03-clone` e execute `git fetch origin`. Nenhum arquivo da sua pasta deve mudar.
+2. Execute `git status`. Você verá que a branch local está atrás de `origin/main`.
+3. Veja as diferenças com `git log main..origin/main --oneline`.
+4. Compare os arquivos com `git diff main origin/main`.
+5. Só depois de conferir, integre as alterações com `git merge origin/main`.
+
+:::note
+`git fetch` atualiza apenas as referências `origin/*`. Ele é seguro porque não toca no seu diretório de trabalho.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+# simulando o colega
+cd ..
+git clone https://github.com/SEU-USUARIO/calculadora.git colega
+cd colega
+# altere ola.c
+git add ola.c
+git commit -m "docs: comenta programa"
+git push
+cd ../ex03-clone
+
+git fetch origin
+git status                    # behind 'origin/main' by 1 commit
+git log main..origin/main --oneline
+git diff main origin/main
+git merge origin/main
+```
+
+</details>
+
+---
+
+### Exercício 5: Puxando alterações com pull
+
+**Objetivo:** atualizar sua branch com as alterações do remoto em um único passo, usando `git pull`, e entender que ele é um `fetch` seguido de `merge`.
+
+**Preparação:** no clone `colega`, crie `media.c` com o código abaixo, faça o commit `feat: adiciona média` e envie com `git push` para o GitHub:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    float n1, n2;
+    printf("Digite duas notas: ");
+    scanf("%f %f", &n1, &n2);
+    printf("Média: %.1f\n", (n1 + n2) / 2);
+    return 0;
+}
+```
+
+**Passos:**
+
+1. No `ex03-clone`, execute `git pull`.
+2. Observe a saída: deve aparecer um `Fast-forward`, porque você não tinha commits novos.
+3. Confirme com `git log --oneline` e com `ls` que `media.c` chegou.
+4. Compile o programa com `gcc media.c -o media.exe` e execute-o para testar.
+5. Configure o comportamento padrão com `git config pull.rebase true`. Depois disso, `git pull` passa a reaplicar seus commits locais em vez de criar commit de merge. Desfaça a configuração com `git config --unset pull.rebase` se preferir o padrão.
+
+:::tip
+Se você tiver commits locais que o remoto não tem, o `git pull` cria um commit de merge. Se preferir um histórico linear, use `git pull --rebase` ou a configuração do passo 5.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ../colega
+# crie media.c
+git add media.c
+git commit -m "feat: adiciona média"
+git push
+
+cd ../ex03-clone
+git pull
+# Fast-forward
+ls
+gcc media.c -o media.exe
+./media.exe
+
+git config pull.rebase true       # pull passa a usar rebase
+git config --unset pull.rebase    # volta ao padrão
+```
+
+</details>
+
+---
+
+### Exercício 6: Alterando a URL e o nome de um remoto
+
+**Objetivo:** mudar o endereço de um remoto e renomeá-lo, como acontece quando um repositório é movido de conta ou de pasta.
+
+**Passos:**
+
+1. No GitHub, crie outro repositório vazio chamado `calculadora-nova`. Depois, clone `https://github.com/SEU-USUARIO/calculadora.git` em uma nova pasta `ex06-remoto` e entre nela.
+2. Altere a URL do remoto `origin` para `https://github.com/SEU-USUARIO/calculadora-nova.git` com `git remote set-url origin`.
+3. Confirme com `git remote -v`.
+4. Envie a branch para o novo endereço com `git push -u origin main`.
+5. Renomeie o remoto com `git remote rename origin principal`.
+6. Liste novamente com `git remote -v`, faça um commit qualquer e envie com `git push principal main`.
+7. Volte ao nome original com `git remote rename principal origin`, para que os próximos exercícios continuem funcionando.
+
+:::warning
+Depois de renomear um remoto, comandos como `git push` sem argumentos continuam funcionando, mas qualquer referência escrita como `origin/main` precisa ser ajustada para `principal/main`.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ..
+git clone https://github.com/SEU-USUARIO/calculadora.git ex06-remoto
+cd ex06-remoto
+git remote set-url origin https://github.com/SEU-USUARIO/calculadora-nova.git
+git remote -v
+git push -u origin main
+
+git remote rename origin principal
+git remote -v
+
+# após fazer um commit qualquer:
+git push principal main
+
+git remote rename principal origin
+git remote -v
+```
+
+</details>
+
+---
+
+### Exercício 7: Trabalhando com dois remotos (origin e upstream)
+
+**Objetivo:** configurar dois remotos, como em um fork de projeto, em que `origin` é a sua cópia e `upstream` é o projeto original.
+
+**Preparação:** crie no GitHub um repositório público chamado `projeto-original`, sem arquivos iniciais. Em uma pasta `ex07-original`, inicialize um repositório, crie `base.c` com o código abaixo, faça o commit `feat: versão inicial`, renomeie a branch para `main` e envie para `https://github.com/SEU-USUARIO/projeto-original.git`. Para representar a sua cópia, use o repositório `calculadora-nova` criado no Exercício 6.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Projeto original v1\n");
+    return 0;
+}
+```
+
+**Passos:**
+
+1. Clone `https://github.com/SEU-USUARIO/calculadora-nova.git` em `ex07-fork`; ele representa a sua cópia do projeto.
+2. Adicione o projeto original como `upstream` com `git remote add upstream https://github.com/SEU-USUARIO/projeto-original.git`.
+3. Execute `git fetch upstream` e depois `git merge upstream/main --allow-unrelated-histories` (a opção é necessária porque os históricos começaram separados).
+4. Confirme com `git remote -v` que há dois pares de remotos.
+5. Envie a integração para a sua cópia com `git push origin main`.
+
+:::note
+Em um fluxo de fork, você normalmente busca alterações de `upstream` e envia para `origin`. Nunca envie diretamente para o projeto original sem permissão.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ex07-original        # pasta criada no preparo
+git init
+# crie base.c
+git add base.c
+git commit -m "feat: versão inicial"
+git branch -M main
+git remote add origin https://github.com/SEU-USUARIO/projeto-original.git
+git push -u origin main
+
+cd ..
+git clone https://github.com/SEU-USUARIO/calculadora-nova.git ex07-fork
+cd ex07-fork
+
+git remote add upstream https://github.com/SEU-USUARIO/projeto-original.git
+git fetch upstream
+git merge upstream/main --allow-unrelated-histories -m "merge: integra projeto original"
+git remote -v
+git push origin main
+```
+
+</details>
+
+---
+
+### Exercício 8: Removendo um remoto
+
+**Objetivo:** remover um remoto que não é mais necessário, sem afetar os demais.
+
+**Passos:**
+
+1. Dentro de `ex07-fork`, execute `git remote -v` e confirme que `upstream` existe.
+2. Remova-o com `git remote remove upstream`.
+3. Confirme com `git remote -v` que apenas `origin` restou.
+4. Tente buscar do `upstream` com `git fetch upstream`. O Git deve reclamar que o remoto não existe.
+5. Verifique que as referências `upstream/*` continuam aparecendo em `git branch -r` até você executar `git fetch --prune`.
+
+:::note
+`git remote remove` apaga a configuração do remoto e as referências de rastreamento associadas. Ele não apaga nada no servidor.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ex07-fork
+git remote -v
+git remote remove upstream
+git remote -v                     # só origin
+
+git fetch upstream                # erro: 'upstream' does not appear to be a git repository
+git branch -r                     # ainda pode listar upstream/* antigos
+git fetch --prune
+git branch -r
+```
+
+</details>
+
+---
+
+### Exercício 9: Enviando e apagando branches remotas
+
+**Objetivo:** publicar uma branch de funcionalidade no remoto, removê-la depois e limpar as referências locais que ficaram para trás.
+
+**Passos:**
+
+1. Dentro de `ex03-clone`, crie a branch `feature/historico` com `git switch -c feature/historico`.
+2. Crie `historico.c` com o código abaixo, faça o commit `feat: adiciona histórico` e envie a branch com `git push -u origin feature/historico`.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Histórico vazio\n");
+    return 0;
+}
+```
+
+3. Confirme com `git branch -r` que `origin/feature/historico` existe.
+4. Apague a branch do remoto com `git push origin --delete feature/historico`.
+5. Apague a branch local com `git branch -d feature/historico`.
+6. Limpe as referências antigas com `git fetch --prune` e confirme com `git branch -r`.
+
+:::danger
+Apagar uma branch remota é permanente para quem depende dela. Confirme antes que nenhum colega ainda está usando a branch.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git switch -c feature/historico
+# crie historico.c
+git add historico.c
+git commit -m "feat: adiciona histórico"
+git push -u origin feature/historico
+
+git branch -r                          # origin/feature/historico
+git push origin --delete feature/historico
+git branch -d feature/historico
+git fetch --prune
+git branch -r
+```
+
+</details>
+
+---
+
+### Exercício 10: Enviando e apagando tags
+
+**Objetivo:** publicar tags de versão no remoto e remover uma tag que foi criada por engano.
+
+**Passos:**
+
+1. Dentro de `ex03-clone`, na branch `main`, crie a tag anotada `v0.1.0` com `git tag -a v0.1.0 -m "Primeira versão"`.
+2. Envie apenas essa tag com `git push origin v0.1.0`.
+3. Crie uma tag errada, `v0.9.9`, com `git tag v0.9.9`, e envie todas as tags locais com `git push origin --tags`.
+4. Apague a tag errada no remoto com `git push origin --delete v0.9.9`.
+5. Apague a tag local com `git tag -d v0.9.9`.
+6. Confira o resultado com `git ls-remote --tags origin`.
+
+:::tip
+`git push origin --tags` envia todas as tags locais de uma vez. Para enviar apenas uma, indique o nome, como no passo 2.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git tag -a v0.1.0 -m "Primeira versão"
+git push origin v0.1.0
+
+git tag v0.9.9
+git push origin --tags
+git push origin --delete v0.9.9
+git tag -d v0.9.9
+
+git ls-remote --tags origin
+```
+
+</details>
+
+---
+
+### Exercício 11: Resolvendo rejeições de push
+
+**Objetivo:** entender por que um `push` é rejeitado, corrigir a situação com `pull --rebase` e conhecer o `--force-with-lease`, usado com cautela.
+
+**Preparação:** em `colega`, faça um commit novo em `media.c` (por exemplo, mudando o texto de saída) e envie com `git push`. Não atualize `ex03-clone`.
+
+**Passos:**
+
+1. No `ex03-clone`, altere `ola.c` e faça o commit `docs: ajusta mensagem de boas-vindas`.
+2. Execute `git push`. Ele deve ser **rejeitado** com a mensagem `non-fast-forward`, porque o remoto tem um commit que você não tem.
+3. Sincronize com `git pull --rebase`. Seu commit será reaplicado sobre o commit do colega.
+4. Envie novamente com `git push`. Agora deve funcionar.
+5. Para entender a alternativa perigosa, reescreva o último commit localmente com `git commit --amend -m "docs: mensagem revisada"` e envie com `git push --force-with-lease`. Compare com `git push --force` e explique a diferença.
+
+:::danger
+`git push --force` sobrescreve o histórico do remoto e pode apagar commits de outras pessoas. Prefira `--force-with-lease`, que só envia se o remoto ainda estiver no estado que você conhece, e use-o apenas em branches que ninguém mais usa.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+# ex03-clone, após editar ola.c:
+git add ola.c
+git commit -m "docs: ajusta mensagem de boas-vindas"
+git push
+# ! [rejected] main -> main (fetch first)
+
+git pull --rebase
+git push
+
+# caso de reescrita local (apenas em branch pessoal):
+git commit --amend -m "docs: mensagem revisada"
+git push --force-with-lease
+```
+
+Diferença: `--force` envia mesmo que o remoto tenha commits novos, apagando-os. `--force-with-lease` recusa o envio se o remoto mudou desde a última vez que você o viu.
+
+</details>
+
+---
+
+### Exercício 12: Rastreamento de branches e refspecs
+
+**Objetivo:** configurar qual branch remota acompanha uma branch local, criar branches a partir de `origin/*` e enviar uma branch local com outro nome no remoto.
+
+**Passos:**
+
+1. Dentro de `ex03-clone`, crie uma branch `docs` que não existe no remoto. Envie-a com outro nome usando a sintaxe `git push origin docs:documentacao`.
+2. Confira com `git branch -vv` que a branch `docs` não está rastreando nada, e configure o rastreamento com `git branch -u origin/documentacao docs`.
+3. Crie uma branch local a partir de uma remota com `git switch --track origin/documentacao` em outra branch local chamada `documentacao-local`. Isso é útil quando um colega já criou a branch no remoto.
+4. Execute `git branch -vv` e confirme que cada branch local aponta para a sua correspondente no remoto.
+
+:::note
+A forma `origem:destino` em `git push` é chamada de **refspec**. Ela permite enviar uma branch local com um nome diferente no remoto.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git switch -c docs
+# faça um commit qualquer
+git push origin docs:documentacao
+
+git branch -vv                       # docs sem rastreamento
+git branch -u origin/documentacao docs
+git branch -vv                       # docs -> origin/documentacao
+
+git fetch origin
+git switch --track origin/documentacao      # cria branch local rastreando o remoto
+git switch main
+git switch -c documentacao-local origin/documentacao
+git branch -vv
+```
+
+</details>
+
+---
+
+### Exercício 13: Clonando de forma específica e rasa
+
+**Objetivo:** clonar apenas uma branch ou apenas o histórico mais recente de um repositório no GitHub, o que economiza tempo e espaço em projetos grandes.
+
+**Passos:**
+
+1. Volte para a pasta de trabalho e clone apenas a branch `main` com `git clone --branch main https://github.com/SEU-USUARIO/calculadora.git ex13-branch`.
+2. Entre em `ex13-branch` e execute `git branch -a`. Você deve ver só as branches que foram baixadas.
+3. Faça um clone raso com `git clone --depth 1 https://github.com/SEU-USUARIO/calculadora.git ex13-raso`.
+4. Execute `git log --oneline` dentro de `ex13-raso` e compare com o clone completo. Só o último commit deve aparecer.
+5. Execute `git fetch --unshallow` dentro de `ex13-raso` para buscar o histórico completo.
+
+:::warning
+Clones rasos têm limitações. Algumas operações, como `git blame` completo e merges com branches antigas, podem não funcionar até que o histórico seja completado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ..
+git clone --branch main https://github.com/SEU-USUARIO/calculadora.git ex13-branch
+cd ex13-branch
+git branch -a
+
+cd ..
+git clone --depth 1 https://github.com/SEU-USUARIO/calculadora.git ex13-raso
+cd ex13-raso
+git log --oneline             # apenas o último commit
+git fetch --unshallow         # busca o histórico completo
+git log --oneline
+```
+
+</details>
+
+---
+
+### Exercício 14: Formatos de URL e diagnóstico de conexão
+
+**Objetivo:** reconhecer os formatos de endereço de remoto (caminho local, HTTPS e SSH), testar a conexão com `git ls-remote` e entender onde ficam as credenciais.
+
+**Passos:**
+
+1. Dentro de `ex03-clone`, execute `git remote -v` e identifique o formato da URL atual do GitHub.
+2. Teste a conexão com o remoto sem baixar nada, usando `git ls-remote origin`. Ele lista as referências do remoto.
+3. Troque temporariamente a URL HTTPS pela URL SSH exibida no botão **Code**, usando `git remote set-url origin git@github.com:SEU-USUARIO/calculadora.git`. Confira que `git ls-remote origin` continua funcionando, caso sua chave SSH esteja configurada.
+4. Volte para a URL HTTPS com `git remote set-url origin https://github.com/SEU-USUARIO/calculadora.git`.
+5. Se você tiver conta no GitHub, veja os formatos reais no botão **Code** do repositório. Observe as diferenças entre `https://github.com/usuario/repo.git` e `git@github.com:usuario/repo.git`.
+6. Execute `git config --get credential.helper` para ver se há um gerenciador de credenciais configurado. Em HTTPS, ele guarda o token para você não digitá-lo toda vez.
+
+:::note
+Nunca grave senhas ou tokens diretamente na URL do remoto, como em `https://usuario:senha@...`. Isso expõe a credencial no histórico do terminal e nas configurações do repositório.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git remote -v
+git ls-remote origin
+
+git remote set-url origin git@github.com:SEU-USUARIO/calculadora.git
+git ls-remote origin
+
+git remote set-url origin https://github.com/SEU-USUARIO/calculadora.git
+
+# formatos com GitHub (exemplos)
+# HTTPS: https://github.com/usuario/projeto-c.git
+# SSH:   git@github.com:usuario/projeto-c.git
+
+git config --get credential.helper
+```
+
+</details>
+
+---
+
+### Exercício 15: Fluxo de Pull Request no GitHub
+
+**Objetivo:** publicar uma branch de funcionalidade no GitHub, abrir um Pull Request, receber alterações de outra pessoa e integrar pelo site. Este exercício exige conta no GitHub.
+
+**Preparação:** crie um repositório `projeto-c` no GitHub, **sem** README, `.gitignore` ou licença. Conecte o seu projeto local a ele com `git remote add origin https://github.com/SEU-USUARIO/projeto-c.git` (ou com a URL SSH, se você configurou chaves).
+
+**Passos:**
+
+1. Envie o `main` com `git push -u origin main`.
+2. Crie a branch `feature/contador` e adicione `contador.c` com o código abaixo. Faça o commit e envie com `git push -u origin feature/contador`.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int c, caracteres = 0;
+    while ((c = getchar()) != EOF) {
+        caracteres++;
+    }
+    printf("Total de caracteres: %d\n", caracteres);
+    return 0;
+}
+```
+
+3. No GitHub, abra um **Pull Request** de `feature/contador` para `main`, com título e descrição claros.
+4. Em outra pasta, clone o repositório e faça um commit na mesma branch `feature/contador` alterando a mensagem de saída. Envie com `git push`.
+5. Na sua pasta, atualize a branch com `git pull` e confira que o Pull Request do GitHub mostra o novo commit.
+6. Faça o merge pelo botão do GitHub. Depois, no seu `main` local, execute `git switch main` e `git pull`, e apague a branch local e a remota com `git branch -d feature/contador` e `git push origin --delete feature/contador`.
+
+:::warning
+Sempre atualize sua branch com `git pull` antes de enviar mudanças. Ignorar isso é a causa mais comum de rejeições de push em equipe.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git push -u origin main
+
+git switch -c feature/contador
+# crie contador.c
+git add contador.c
+git commit -m "feat: adiciona contador de caracteres"
+git push -u origin feature/contador
+# abra o Pull Request no GitHub
+
+# pasta do colega
+git clone https://github.com/SEU-USUARIO/projeto-c.git ../colega-pr
+cd ../colega-pr
+git switch feature/contador
+# altere a mensagem de saída
+git add contador.c
+git commit -m "style: ajusta texto de saída do contador"
+git push
+
+# de volta à sua pasta
+cd ../projeto-c
+git pull                          # traz o commit do colega
+# confira o Pull Request no GitHub
+
+# após o merge no site:
+git switch main
+git pull
+git branch -d feature/contador
+git push origin --delete feature/contador
+```
+
+</details>

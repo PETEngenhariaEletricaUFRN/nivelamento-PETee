@@ -1,11 +1,852 @@
 ---
-slug: /versionamento/fundamentos
+id: fundamentos-git
+title: Fundamentos do Git
+sidebar_label: 1. Fundamentos
+sidebar_position: 1
 ---
 
-# Fundamentos
+## 🛠 Requisitos e Materiais
 
-Exercícios sobre os conceitos essenciais de controle de versão com Git.
+- **Git** instalado (verifique com `git --version`)
+- **Compilador C** (`gcc` ou `clang`)
+- **Terminal** (Bash, PowerShell ou Git Bash)
+- **Editor de código**, como VS Code
 
-## Exercícios
+:::note
+Crie uma pasta separada para estes exercícios (por exemplo, `exercicios-git`). Dentro dela, cada exercício usa uma subpasta própria, quando indicado.
+:::
 
-Adicione aqui os exercícios deste submódulo.
+## 📝 Lista de Exercícios
+
+### Exercício 1: Configurando a identidade e criando o repositório
+
+**Objetivo:** configurar seu nome e e-mail no Git, criar um repositório e entender o estado inicial da pasta.
+
+**Passos:**
+
+1. Configure sua identidade globalmente:
+
+```bash
+git config --global user.name "Seu Nome"
+git config --global user.email "seu-email@exemplo.com"
+```
+
+2. Crie a pasta `ex01-ola` e entre nela.
+3. Inicialize o repositório com `git init`.
+4. Crie o arquivo `ola.c` com o conteúdo abaixo:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Olá, Git!\n");
+    return 0;
+}
+```
+
+5. Execute `git status` e observe o arquivo listado como **não rastreado** (untracked).
+
+:::tip
+Use `git config --list --show-origin` para conferir de onde vem cada configuração. Isso ajuda a identificar conflitos entre configurações globais e locais.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git config --global user.name "Seu Nome"
+git config --global user.email "seu-email@exemplo.com"
+
+mkdir ex01-ola
+cd ex01-ola
+git init
+
+# (crie ola.c com o conteúdo acima)
+git status
+# Untracked files:
+#   ola.c
+```
+
+</details>
+
+---
+
+### Exercício 2: Entendendo os três estados de um arquivo
+
+**Objetivo:** observar um arquivo passando pelos estados **diretório de trabalho**, **área de preparo** (staging) e **repositório**.
+
+**Passos:**
+
+1. Crie a pasta `ex02-estados` com `git init` dentro dela.
+2. Crie o arquivo `bemvindo.c` com o código abaixo:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    char nome[50];
+    printf("Qual é o seu nome? ");
+    scanf("%49s", nome);
+    printf("Bem-vindo, %s!\n", nome);
+    return 0;
+}
+```
+
+3. Execute `git status` e verifique o estado do arquivo.
+4. Execute `git add bemvindo.c` e verifique como foi alterado o arquivo.
+5. Execute `git commit -m "feat: adiciona programa de boas-vindas"` e verifique novamente o estado do arquivo.
+6. Edite o arquivo, sem adicioná-lo, e observe em que estado o arquivo se encontra.
+
+:::note
+O ciclo básico é sempre o mesmo: **editar → adicionar (`git add`) → commitar (`git commit`)**.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex02-estados
+cd ex02-estados
+git init
+
+# crie bemvindo.c
+git status                 # Untracked: bemvindo.c
+git add bemvindo.c
+git status                 # Changes to be committed: new file: bemvindo.c
+git commit -m "feat: adiciona programa de boas-vindas"
+git status                 # nothing to commit, working tree clean
+
+# edite bemvindo.c (ex.: mude o texto de saída)
+git status                 # Changes not staged for commit: modified: bemvindo.c
+```
+
+</details>
+
+---
+
+### Exercício 3: Entendendo o commit, o hash e o HEAD
+
+**Objetivo:** perceber que um commit é um **snapshot** do projeto, identificado por um hash, e que o `HEAD` é o ponteiro para o commit atual.
+
+**Passos:**
+
+1. Crie a pasta `ex03-modelo` com `git init`.
+2. Crie `soma.c` com o código abaixo e faça o commit `feat: adiciona soma de inteiros`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int a, b;
+    printf("Digite dois inteiros: ");
+    scanf("%d %d", &a, &b);
+    printf("Soma: %d\n", a + b);
+    return 0;
+}
+```
+
+3. Execute `git rev-parse HEAD` e anote o hash completo do commit.
+4. Execute `cat .git/HEAD`. Você verá algo como `ref: refs/heads/main`, o que indica que o `HEAD` aponta para a branch `main`.
+5. Execute `cat .git/refs/heads/main` (ou `git show-ref`). O conteúdo é o mesmo hash do passo 3, porque a branch é só um nome que aponta para um commit.
+6. Execute `git cat-file -p HEAD`. Observe os campos `tree` e `author`.
+
+:::tip
+Como o hash é calculado a partir do conteúdo, dois commits com o mesmo conteúdo e a mesma mensagem em momentos diferentes ainda têm hashes diferentes, porque o horário e o autor fazem parte dos dados.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex03-modelo
+cd ex03-modelo
+git init
+
+# crie soma.c
+git add soma.c
+git commit -m "feat: adiciona soma de inteiros"
+
+git rev-parse HEAD            # hash completo, ex: 3f2a9c1...
+cat .git/HEAD                 # ref: refs/heads/main
+git show-ref                  # refs/heads/main aponta para o mesmo hash
+git cat-file -p HEAD          # tree, author, committer e mensagem
+```
+
+</details>
+
+---
+
+### Exercício 4: Lendo o histórico com filtros
+
+**Objetivo:** consultar o histórico em formatos diferentes e filtrar commits por autor, data e conteúdo.
+
+**Passos:**
+
+1. Crie a pasta `ex04-historico` com `git init`.
+2. Faça três commits, um para cada arquivo abaixo, com as mensagens indicadas:
+   - `subtracao.c` com a lógica de subtração (`a - b`): `feat: adiciona subtração`
+   - `multiplicacao.c` com a lógica de multiplicação (`a * b`): `feat: adiciona multiplicação`
+   - `divisao.c` com a lógica de divisão (`a / b`): `feat: adiciona divisão`
+3. Execute `git log` (completo), `git log --oneline` e `git log -n 2`.
+4. Execute `git log --format="%h %an %s"` para personalizar a saída.
+5. Execute `git log --author="Seu Nome"` e `git log --since="1 hour ago"` (ajuste o período se necessário).
+6. Execute `git log -p -1` para ver o conteúdo do último commit e `git log --stat` para ver apenas os arquivos alterados.
+
+:::tip
+Combine filtros para encontrar rapidamente um commit. Por exemplo, `git log --oneline -- divisao.c` mostra só os commits que alteraram esse arquivo.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex04-historico
+cd ex04-historico
+git init
+
+# crie subtracao.c, multiplicacao.c e divisao.c, cada um com seu commit
+git log
+git log --oneline
+git log -n 2
+git log --format="%h %an %s"
+git log --author="Seu Nome"
+git log --since="1 hour ago"
+git log -p -1
+git log --stat
+git log --oneline -- divisao.c
+```
+
+</details>
+
+---
+
+### Exercício 5: Visualizando diferenças com diff
+
+**Objetivo:** comparar alterações antes de commitá-las, tanto no diretório de trabalho quanto na área de preparo.
+
+**Passos:**
+
+1. Crie a pasta `ex05-diff` com `git init`.
+2. Crie `media.c` com o código abaixo e faça o primeiro commit:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    float n1, n2;
+    printf("Digite duas notas: ");
+    scanf("%f %f", &n1, &n2);
+    printf("Média: %.1f\n", (n1 + n2) / 2);
+    return 0;
+}
+```
+
+3. Altere a saída para `Média final: %.1f\n` **sem** adicionar ao staged. Execute `git diff`.
+4. Execute `git add media.c` e depois `git diff` (não mostra nada). Em seguida, execute `git diff --staged`.
+5. Faça o commit `refactor: altera texto de saída da média`.
+
+:::note
+`git diff` compara o diretório de trabalho com a área de preparo. `git diff --staged` compara a área de preparo com o último commit.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex05-diff
+cd ex05-diff
+git init
+
+# crie media.c
+git add media.c
+git commit -m "feat: adiciona cálculo de média"
+
+# altere o printf para "Média final: %.1f\n"
+git diff                   # mostra a linha removida e a nova
+git add media.c
+git diff                   # vazio: já está no preparo
+git diff --staged          # mostra a alteração preparada
+git commit -m "refactor: altera texto de saída da média"
+```
+
+</details>
+
+---
+
+### Exercício 6: Inspecionando um commit e descobrindo autoria com blame
+
+**Objetivo:** ver o conteúdo de um commit específico com `git show` e descobrir qual commit alterou cada linha de um arquivo com `git blame`.
+
+**Preparação:** crie a pasta `ex06-inspecao` com `git init`. Faça o commit de `fatorial.c` com a versão abaixo (com um `for` que começa em 1) e a mensagem `feat: adiciona fatorial`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int n, resultado = 1;
+    printf("Digite um número: ");
+    scanf("%d", &n);
+    for (int i = 1; i <= n; i++) {
+        resultado *= i;
+    }
+    printf("%d! = %d\n", n, resultado);
+    return 0;
+}
+```
+
+Depois, altere o `for` para começar em `2` e faça o commit `fix: começa fatorial em 2`.
+
+**Passos:**
+
+1. Execute `git log --oneline` e copie o hash do primeiro commit (`feat: adiciona fatorial`).
+2. Execute `git show HEAD` para ver a alteração do último commit.
+3. Execute `git show <hash-do-primeiro-commit> --stat` para ver os arquivos daquele commit sem o conteúdo completo.
+4. Execute `git blame fatorial.c`. Cada linha aparece com o hash, o autor e a data do commit que a escreveu.
+5. Execute `git blame -L 6,8 fatorial.c` para ver apenas as linhas do laço.
+
+:::tip
+`git blame` não aponta culpados. Ele serve para entender por que uma linha existe e qual commit a introduziu, o que ajuda a ler a mensagem e a discussão daquela mudança.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex06-inspecao
+cd ex06-inspecao
+git init
+
+# crie fatorial.c com for começando em 1
+git add fatorial.c
+git commit -m "feat: adiciona fatorial"
+
+# altere o for para começar em 2
+git add fatorial.c
+git commit -m "fix: começa fatorial em 2"
+
+git log --oneline
+git show HEAD
+git show HEAD~1 --stat
+git blame fatorial.c
+git blame -L 6,8 fatorial.c
+```
+
+Observação: as linhas alteradas no segundo commit aparecem com o hash dele no `blame`, e as demais com o hash do primeiro.
+
+</details>
+
+---
+
+### Exercício 7: Ignorando arquivos e limpando o diretório
+
+**Objetivo:** impedir que arquivos gerados sejam versionados com `.gitignore` e remover arquivos não rastreados com `git clean`.
+
+**Passos:**
+
+1. Crie a pasta `ex07-ignorar` com `git init`.
+2. Crie `hello.c` com o código abaixo:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Compilado com sucesso!\n");
+    return 0;
+}
+```
+
+3. Compile com `gcc hello.c -o hello.exe`. verifique o status.
+4. Crie um arquivo `.gitignore` com as linhas abaixo e execute `git status` novamente:
+
+```text
+*.exe
+*.o
+*.out
+build/
+```
+
+5. Verifique a regra que ignora o arquivo com `git check-ignore -v hello.exe`.
+6. Crie também um arquivo `rascunho.txt` e uma pasta `temp/` com um arquivo dentro. Ambos aparecem como não rastreados.
+7. Execute `git clean -n` para ver o que seria removido, sem apagar nada.
+8. Execute `git clean -f` para remover apenas os arquivos não rastreados que não estão ignorados. Use `git clean -fd` se também quiser remover pastas.
+9. Faça o commit de `hello.c` e `.gitignore`.
+
+:::warning
+`git clean -f` apaga arquivos de forma definitiva. Sempre rode `git clean -n` antes, para conferir a lista.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex07-ignorar
+cd ex07-ignorar
+git init
+
+# crie hello.c
+gcc hello.c -o hello.exe
+git status                 # hello.exe aparece como untracked
+
+# crie .gitignore com *.exe, *.o, *.out, build/
+git status                 # hello.exe some da lista
+git check-ignore -v hello.exe
+
+echo "rascunho" > rascunho.txt
+mkdir temp && echo "x" > temp/nota.txt
+git clean -n               # lista rascunho.txt
+git clean -f               # remove rascunho.txt
+git clean -fd              # remove também a pasta temp/
+
+git add hello.c .gitignore
+git commit -m "chore: adiciona código e .gitignore"
+```
+
+Observação: arquivos que estão no `.gitignore` não são removidos por `git clean` sem a opção `-x`. Isso protege, por exemplo, o executável compilado.
+
+</details>
+
+---
+
+### Exercício 8: Movendo, renomeando e removendo arquivos
+
+**Objetivo:** usar comandos do Git para mudar a estrutura do projeto mantendo o histórico.
+
+**Preparação:** crie a pasta `ex08-mover` com `git init`. Crie `maior.c` com o código abaixo e faça o commit `feat: adiciona maior de dois números`. Crie também `teste.c` (vazio) e faça o commit `chore: adiciona arquivo de teste`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int a, b;
+    printf("Digite dois inteiros: ");
+    scanf("%d %d", &a, &b);
+    if (a > b) {
+        printf("Maior: %d\n", a);
+    } else {
+        printf("Maior: %d\n", b);
+    }
+    return 0;
+}
+```
+
+**Passos:**
+
+1. Renomeie `maior.c` para `maximo.c` com `git mv maior.c maximo.c`.
+2. Execute `git status` e observe que o Git já reconhece a alteração como renomeação.
+3. Faça o commit `refactor: renomeia maior.c para maximo.c`.
+4. Remova `teste.c` com `git rm teste.c` e faça o commit `chore: remove arquivo de teste`.
+5. Confirme com `git log --oneline` e `git log --stat -1`.
+
+:::tip
+Usar `git mv` e `git rm` em vez de mover ou apagar pelo explorador de arquivos evita a necessidade de rodar `git add` depois, porque ambos já preparam a mudança.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex08-mover
+cd ex08-mover
+git init
+
+# crie maior.c e teste.c
+git add maior.c
+git commit -m "feat: adiciona maior de dois números"
+git add teste.c
+git commit -m "chore: adiciona arquivo de teste"
+
+git mv maior.c maximo.c
+git status                 # renamed: maior.c -> maximo.c
+git commit -m "refactor: renomeia maior.c para maximo.c"
+
+git rm teste.c
+git commit -m "chore: remove arquivo de teste"
+
+git log --oneline
+git log --stat -1
+```
+
+</details>
+
+---
+
+### Exercício 9: Preparando apenas parte das alterações com add -p
+
+**Objetivo:** separar, em commits diferentes, alterações feitas no mesmo arquivo, usando o modo interativo `git add -p`.
+
+**Preparação:** crie a pasta `ex09-parcial` com `git init`. Crie `calc.c` com o código abaixo e faça o commit `feat: calcula soma`:
+
+```c
+#include <stdio.h>
+
+int soma(int a, int b) {
+    return a + b;
+}
+
+int main(void) {
+    printf("%d\n", soma(2, 3));
+    return 0;
+}
+```
+
+Depois, faça **duas** alterações sem commitar: acrescente a função `subtracao` logo após `soma`, e troque o `printf` do `main` por `printf("Soma: %d\n", soma(2, 3));`.
+
+**Passos:**
+
+1. Execute `git add -p calc.c`. O Git mostra os blocos de alteração (chamados de *hunks*) e pergunta o que fazer com cada um.
+2. Responda `y` para preparar o bloco da função `subtracao` e `n` para o bloco do `printf`. Se o Git juntar tudo em um bloco só, responda `s` para dividi-lo.
+3. Execute `git status` e confira que só a função `subtracao` está preparada.
+4. Faça o commit `feat: adiciona subtração`.
+5. Prepare o restante com `git add calc.c` e faça o commit `fix: melhora texto de saída da soma`.
+
+:::note
+Respostas comuns no `git add -p`: `y` prepara o bloco, `n` pula, `s` divide em blocos menores, `q` sai e `?` lista todas as opções.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex09-parcial
+cd ex09-parcial
+git init
+
+# crie calc.c com soma e main, faça o commit
+git add calc.c
+git commit -m "feat: calcula soma"
+
+# adicione subtracao() após soma e altere o printf
+git add -p calc.c
+# (y no bloco de subtracao, n no bloco do printf; s se necessário)
+
+git status                 # só subtracao preparada
+git commit -m "feat: adiciona subtração"
+
+git add calc.c
+git commit -m "fix: melhora texto de saída da soma"
+git log --oneline
+```
+
+</details>
+
+---
+
+### Exercício 10: Lendo e restaurando versões antigas de um arquivo
+
+**Objetivo:** consultar como um arquivo era em um commit anterior e trazê-lo de volta, sem apagar o histórico.
+
+**Preparação:** crie a pasta `ex10-versoes` com `git init`. Crie `versao.c` com `printf("v1\n");` dentro de um `main` e faça o commit `feat: versão 1`. Depois altere para `v2` e faça o commit `feat: versão 2`. Por fim, altere para `v3` e faça o commit `feat: versão 3`.
+
+**Passos:**
+
+1. Execute `git show HEAD~2:versao.c` para ver a versão 1 sem alterar nada.
+2. Execute `git show HEAD~1:versao.c` para ver a versão 2.
+3. Restaure a versão 1 **apenas no diretório de trabalho** com `git restore --source=HEAD~2 versao.c`. Confira com `git status` e `cat versao.c`.
+4. Descarte essa restauração com `git restore versao.c`, para voltar à versão 3.
+5. Traga a versão 1 para a área de preparo e para o diretório com `git restore --source=HEAD~2 --staged --worktree versao.c`. Faça o commit `fix: volta à versão 1`.
+
+:::warning
+`git restore` sem `--source` descarta alterações não commitadas. Com `--source`, o arquivo é sobrescrito com a versão indicada. Confira o estado com `git status` antes de rodar.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex10-versoes
+cd ex10-versoes
+git init
+
+# crie versao.c com v1, faça o commit
+# altere para v2, faça o commit
+# altere para v3, faça o commit
+
+git show HEAD~2:versao.c           # v1
+git show HEAD~1:versao.c           # v2
+
+git restore --source=HEAD~2 versao.c
+git status
+cat versao.c                       # v1
+
+git restore versao.c               # volta à versão atual (v3)
+
+git restore --source=HEAD~2 --staged --worktree versao.c
+git commit -m "fix: volta à versão 1"
+```
+
+Alternativa mais antiga, equivalente para este caso: `git checkout HEAD~2 -- versao.c`.
+
+</details>
+
+---
+
+### Exercício 11: Guardando trabalho em andamento com stash
+
+**Objetivo:** guardar alterações não commitadas, trocar de contexto e recuperar o trabalho depois.
+
+**Preparação:** crie a pasta `ex11-stash` com `git init`. Crie `saudacao.c` com o código abaixo e faça o commit `feat: adiciona saudação`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Olá, mundo!\n");
+    return 0;
+}
+```
+
+**Passos:**
+
+1. Altere a saída para `Olá, pessoal!` **sem** commitar.
+2. Execute `git stash push -m "saudacao em rascunho"` para guardar a alteração. Confira com `git status` que o diretório voltou ao estado limpo.
+3. Execute `git stash list` e observe a entrada criada.
+4. Execute `git stash show -p` para ver o conteúdo guardado.
+5. Recupere a alteração com `git stash pop`. Confira com `git status` e `git stash list`.
+6. Guarde novamente com `git stash`, depois use `git stash apply` (que mantém a entrada na lista) e por fim `git stash drop` para apagá-la.
+
+:::tip
+`git stash pop` aplica a alteração e remove a entrada da lista. `git stash apply` aplica sem remover, útil quando você quer aplicar o mesmo trabalho em outro lugar.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex11-stash
+cd ex11-stash
+git init
+
+# crie saudacao.c e faça o commit
+# altere a saída para "Olá, pessoal!"
+
+git stash push -m "saudacao em rascunho"
+git status                 # working tree clean
+git stash list             # stash@{0}: On main: saudacao em rascunho
+git stash show -p          # mostra a alteração guardada
+git stash pop              # aplica e remove da lista
+
+# nova alteração:
+git stash
+git stash apply            # aplica, mas mantém na lista
+git stash list
+git stash drop             # remove a entrada da lista
+```
+
+</details>
+
+---
+
+### Exercício 12: Corrigindo o último commit com amend
+
+**Objetivo:** corrigir a mensagem do último commit e incluir um arquivo que foi esquecido.
+
+**Passos:**
+
+1. Crie a pasta `ex12-amend` com `git init`.
+2. Crie `cubo.c` com o código abaixo e faça o commit com a mensagem `feat: adiciona cubo`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int lado;
+    printf("Digite o lado do cubo: ");
+    scanf("%d", &lado);
+    printf("Volume: %d\n", lado * lado * lado);
+    return 0;
+}
+```
+
+3. Crie `README.md` com a linha `Programas de cálculo geométrico.` **sem** adicioná-lo ao commit.
+4. Corrija o último commit com `git commit --amend` para que ele inclua também o `README.md` e tenha a mensagem `feat: adiciona cubo e README`.
+5. Confirme com `git show --stat`.
+
+:::warning
+`git commit --amend` reescreve o último commit. Não use em commits que já foram enviados a um repositório compartilhado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex12-amend
+cd ex12-amend
+git init
+
+# crie cubo.c
+git add cubo.c
+git commit -m "feat: adiciona cubo"
+
+# crie README.md
+git add README.md
+git commit --amend -m "feat: adiciona cubo e README"
+
+git show --stat
+```
+
+</details>
+
+---
+
+### Exercício 13: Desfazendo commits com reset
+
+**Objetivo:** entender a diferença entre `--soft`, `--mixed` e `--hard` ao voltar o histórico.
+
+**Preparação:** crie a pasta `ex13-reset` com `git init` e faça três commits com `lista.c` evoluindo a cada etapa. Primeiro, crie o arquivo com o código abaixo e faça o commit `feat: cria lista de notas`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int notas[3] = {7, 8, 9};
+    for (int i = 0; i < 3; i++) {
+        printf("Nota %d: %d\n", i + 1, notas[i]);
+    }
+    return 0;
+}
+```
+
+Depois, adicione `printf("---\n");` no início do `main` e faça o commit `feat: adiciona separador`. Por último, adicione o arquivo `anotacoes.txt` com o texto `teste` e faça o commit `docs: adiciona anotações`.
+
+**Passos:**
+
+1. Execute `git reset --soft HEAD~1`. Verifique com `git status` que as alterações do último commit continuam **preparadas**.
+2. Refaça o commit com `git commit -m "docs: adiciona anotações"`.
+3. Execute `git reset --mixed HEAD~1`. Verifique que as alterações continuam, mas **não preparadas**.
+4. Execute `git add anotacoes.txt` e faça o commit novamente.
+5. Execute `git reset --hard HEAD~1`. Verifique que o arquivo `anotacoes.txt` foi removido do diretório.
+
+:::danger
+`git reset --hard` apaga as alterações do diretório de trabalho. Use-o apenas quando tiver certeza de que não precisa delas.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git reset --soft HEAD~1
+git status                 # anotacoes.txt em "Changes to be committed"
+git commit -m "docs: adiciona anotações"
+
+git reset --mixed HEAD~1
+git status                 # anotacoes.txt em "Untracked files"
+git add anotacoes.txt
+git commit -m "docs: adiciona anotações"
+
+git reset --hard HEAD~1
+ls                         # anotacoes.txt não existe mais
+```
+
+Resumo:
+- `--soft`: volta o commit, mantém as alterações preparadas.
+- `--mixed` (padrão): volta o commit, mantém as alterações, mas não preparadas.
+- `--hard`: volta o commit e apaga as alterações.
+
+</details>
+
+---
+
+### Exercício 14: Recuperando commits perdidos com reflog
+
+**Objetivo:** recuperar um commit que foi apagado do histórico visível, usando o `reflog`, que registra cada movimentação do `HEAD`.
+
+**Preparação:** crie a pasta `ex14-reflog` com `git init`. Crie `contador.c` com o código abaixo e faça o commit `feat: contador inicial`. Depois, altere o arquivo para contar de 1 a 5 e faça o commit `feat: conta até cinco`.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int i;
+    for (i = 0; i < 3; i++) {
+        printf("%d\n", i);
+    }
+    return 0;
+}
+```
+
+**Passos:**
+
+1. Execute `git log --oneline` e confirme os dois commits.
+2. Simule um erro: execute `git reset --hard HEAD~1`. O commit `feat: conta até cinco` some do `git log`.
+3. Execute `git reflog` e localize a linha que mostra o commit perdido, com a mensagem `feat: conta até cinco`.
+4. Recupere o commit com `git reset --hard <hash-do-commit-perdido>`.
+5. Confirme com `git log --oneline` e `cat contador.c`.
+
+:::tip
+O `reflog` é local e guarda as movimentações do `HEAD` por um período (por padrão, cerca de 90 dias). Ele é a rede de segurança para desfazer erros de `reset`, `commit --amend` e rebase.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git log --oneline          # feat: conta até cinco / feat: contador inicial
+git reset --hard HEAD~1    # o commit "conta até cinco" some
+git log --oneline          # só "contador inicial"
+
+git reflog
+# a1b2c3d HEAD@{1}: commit: feat: conta até cinco
+# 9f8e7d6 HEAD@{2}: commit (initial): feat: contador inicial
+
+git reset --hard a1b2c3d   # use o hash mostrado no seu reflog
+git log --oneline
+cat contador.c
+```
+
+</details>
+
+---
+
+### Exercício 15: Revertendo um commit já publicado
+
+**Objetivo:** desfazer um commit sem reescrever o histórico, usando `git revert`. Esse é o método seguro quando o commit já foi enviado a outras pessoas.
+
+**Passos:**
+
+1. Crie a pasta `ex15-revert` com `git init`.
+2. Crie `contas.c` com o código abaixo e faça o commit `feat: adiciona cálculo de juros`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    float capital = 1000.0f, taxa = 0.05f;
+    printf("Montante: %.2f\n", capital * (1 + taxa));
+    return 0;
+}
+```
+
+3. Altere a linha do `printf` para `capital * taxa` (um erro proposital) e faça o commit `feat: altera cálculo de montante`.
+4. Execute `git revert HEAD`. Um editor vai abrir para a mensagem do novo commit; deixe a sugerida e salve.
+5. Abra `contas.c` e confirme que o cálculo voltou ao correto.
+6. Consulte o histórico com `git log --oneline`. Note que o commit com o erro continua lá, e foi criado um novo commit desfazendo-o.
+
+:::tip
+Com `git revert`, o histórico preserva tudo o que aconteceu. Com `git reset`, o histórico é reescrito. Em projetos compartilhados, prefira `revert`.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex15-revert
+cd ex15-revert
+git init
+
+# crie contas.c
+git add contas.c
+git commit -m "feat: adiciona cálculo de juros"
+
+# altere o printf para capital * taxa
+git add contas.c
+git commit -m "feat: altera cálculo de montante"
+
+git revert HEAD            # abre editor com "Revert ..."; salve
+git log --oneline
+# <novo-hash> Revert "feat: altera cálculo de montante"
+# <hash>      feat: altera cálculo de montante
+# <hash>      feat: adiciona cálculo de juros
+```
+
+</details>
+

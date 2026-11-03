@@ -1,11 +1,758 @@
 ---
-slug: /programacao-hardware/gpios-digitais
+id: exercicios-gpios-digitais
+title: Exercícios - GPIOs Digitais
+sidebar_label: 1. GPIOs Digitais
+sidebar_position: 1
+description: Lista de exercícios práticos sobre GPIOs digitais no ESP32, com LEDs, botões, displays, teclados, buzzers, portas lógicas, flip-flops, contadores, registradores de deslocamento e relés.
 ---
 
-# GPIOs Digitais
+Esta lista tem **15 exercícios** sobre entradas e saídas digitais no ESP32. A progressão começa com um LED e termina com circuitos digitais montados com CIs da série 74 e 40, controlados pelo microcontrolador.
 
-Exercícios sobre configuração e controle de entradas e saídas digitais.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+- **ESP32 DEVKIT** (estoque: 5) ou **ESP32 CAM** (estoque: 6), com cabo USB
+- **Protoboard** (estoque: 21) e jumpers
+- **Resistores** de 220Ω, 1kΩ e 10kΩ (estoque amplo)
+- **Multímetro** e, se possível, **osciloscópio** ou analisador lógico
+- **Arduino IDE** ou **PlatformIO** com o pacote *esp32 by Espressif* (versão 3.x)
+- Simulação opcional no **Wokwi**, para os exercícios 1 a 4
 
-Adicione aqui os exercícios deste submódulo.
+:::note
+**Legenda de estoque.** ✅ indica que o item já está no laboratório, com a quantidade entre parênteses. 🛒 indica que ainda precisa ser comprado, com a quantidade ideal da planilha.
+:::
+
+:::danger
+O ESP32 opera em **3,3 V**. Suas saídas não toleram 5 V: aplicar 5 V em um pino pode danificá-lo. Circuitos digitais de 5 V (como a série 4000 alimentada em 5 V) precisam de **conversor de nível lógico** (estoque: 3) antes de receber sinais do ESP32, e o contrário também vale para saídas de 5 V que entram em pinos do ESP32.
+:::
+
+:::warning
+Evite os pinos de *boot* (GPIO 0, 2, 5, 12 e 15) para cargas ou botões que possam estar acionados na inicialização. Os pinos GPIO 34 a 39 são **somente entrada** e não têm resistor de pull-up interno.
+:::
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Acendendo um LED
+
+**Objetivo:** configurar um pino como saída e entender a corrente que um LED consome.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Monte o circuito: GPIO 26 → resistor 220Ω → ânodo do LED; cátodo → GND.
+2. Calcule a corrente aproximada com $I = \frac{3{,}3 - V_F}{R}$, usando $V_F \approx 2\,\text{V}$ para o LED vermelho.
+3. Faça o LED piscar a cada 500 ms, usando `delay()`.
+
+```cpp
+const int PINO_LED = 26;
+
+void setup() {
+  pinMode(PINO_LED, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(PINO_LED, HIGH);
+  delay(500);
+  digitalWrite(PINO_LED, LOW);
+  delay(500);
+}
+```
+
+:::tip
+Meça a tensão sobre o resistor com o multímetro. Confirmar que a corrente está na faixa de 5 a 10 mA ajuda a entender por que não se liga um LED diretamente em um pino sem resistor.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Com $V_F \approx 2\,\text{V}$ e $R = 220\,\Omega$:
+
+$$I = \frac{3{,}3 - 2}{220} \approx 5{,}9\,\text{mA}$$
+
+O código acima resolve o item 3. Para trocar o período, altere os valores de `delay()`. Esse método bloqueia o processador durante a espera, o que será tratado no submódulo de Programação Não Bloqueante.
+
+</details>
+
+---
+
+### Exercício 2: Lendo um botão sem retenção
+
+**Objetivo:** ler uma entrada digital e usar o resistor de pull-up interno do ESP32.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), botão sem retenção ✅ (55), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o botão entre GPIO 4 e GND. Use `INPUT_PULLUP`, de modo que o pino fique em HIGH em repouso.
+2. Acenda o LED (GPIO 26) enquanto o botão estiver pressionado.
+3. Observe no monitor serial quantas vezes o estado muda ao apertar uma única vez. Esse efeito é o *bouncing*.
+
+```cpp
+const int PINO_BOTAO = 4;
+const int PINO_LED = 26;
+
+void setup() {
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_LED, OUTPUT);
+  Serial.begin(115200);
+}
+
+void loop() {
+  bool pressionado = (digitalRead(PINO_BOTAO) == LOW);
+  digitalWrite(PINO_LED, pressionado);
+}
+```
+
+:::note
+Com `INPUT_PULLUP`, o botão pressionado leva o pino a LOW. A lógica é invertida em relação ao que muitos esperam.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Ao apertar o botão, o pino oscila algumas vezes antes de estabilizar. Para contar apenas um pressionamento, é necessário aplicar *debounce*, o que é feito no exercício 3 com uma leitura estável em um intervalo de tempo.
+
+Exemplo de contagem com debounce simples por tempo:
+
+```cpp
+int contador = 0;
+bool estadoAnterior = HIGH;
+unsigned long ultimoTempo = 0;
+
+void loop() {
+  bool estadoAtual = digitalRead(PINO_BOTAO);
+  if (estadoAtual != estadoAnterior && millis() - ultimoTempo > 50) {
+    if (estadoAtual == LOW) {
+      contador++;
+      Serial.println(contador);
+    }
+    ultimoTempo = millis();
+    estadoAnterior = estadoAtual;
+  }
+}
+```
+
+</details>
+
+---
+
+### Exercício 3: Botão com retenção e chave liga/desliga
+
+**Objetivo:** diferenciar um sinal momentâneo de um sinal mantido, e usar a leitura de borda para alternar um estado.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), botão com retenção ✅ (5), chave liga/desliga ✅ (4), LED verde ✅ (40), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o botão com retenção no GPIO 16 e a chave liga/desliga no GPIO 17, ambos com pull-up interno.
+2. Use o botão com retenção para alternar o LED verde (GPIO 25) a cada pressionamento, detectando a **borda** de descida.
+3. Compare o comportamento com a chave liga/desliga, que mantém o nível até ser acionada de novo.
+
+:::tip
+Para detectar borda, guarde o estado anterior e só reaja quando o estado atual for diferente dele. Isso evita que o LED troque de estado a cada iteração do `loop()`.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_RETENCAO = 16;
+const int PINO_CHAVE = 17;
+const int PINO_VERDE = 25;
+
+bool estadoLed = false;
+bool anteriorRetencao = HIGH;
+
+void setup() {
+  pinMode(PINO_RETENCAO, INPUT_PULLUP);
+  pinMode(PINO_CHAVE, INPUT_PULLUP);
+  pinMode(PINO_VERDE, OUTPUT);
+}
+
+void loop() {
+  bool atualRetencao = digitalRead(PINO_RETENCAO);
+  if (anteriorRetencao == HIGH && atualRetencao == LOW) {
+    estadoLed = !estadoLed;
+    delay(30);
+  }
+  anteriorRetencao = atualRetencao;
+
+  // A chave liga/desliga controla diretamente o LED.
+  digitalWrite(PINO_VERDE, estadoLed || digitalRead(PINO_CHAVE) == LOW);
+}
+```
+
+</details>
+
+---
+
+### Exercício 4: Lendo uma chave deslizante e um dip switch de 4 vias
+
+**Objetivo:** ler várias entradas ao mesmo tempo e montar um número binário com elas.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), chave deslizante ✅ (6), dip switch 4 vias 🛒 (ideal 5), LED vermelho ✅ (45) × 4, resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue a chave deslizante em um pino com pull-up.
+2. Ligue os 4 pinos do dip switch em pinos com pull-up.
+3. Monte um número de 0 a 15 com os 4 bits do dip switch e mostre-o em 4 LEDs.
+
+:::note
+Se o dip switch ainda não estiver disponível, use 4 botões sem retenção ✅ (55) para simular a mesma leitura.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BITS[4] = {13, 14, 16, 17};
+const int LEDS[4] = {23, 22, 21, 19};
+
+void setup() {
+  for (int i = 0; i < 4; i++) {
+    pinMode(BITS[i], INPUT_PULLUP);
+    pinMode(LEDS[i], OUTPUT);
+  }
+}
+
+void loop() {
+  int valor = 0;
+  for (int i = 0; i < 4; i++) {
+    bool bitAtivo = (digitalRead(BITS[i]) == LOW);   // chave fechada = 1
+    digitalWrite(LEDS[i], bitAtivo);
+    valor |= (bitAtivo << i);
+  }
+  Serial.println(valor);
+  delay(100);
+}
+```
+
+</details>
+
+---
+
+### Exercício 5: Dip switch de 8 vias como entrada de configuração
+
+**Objetivo:** ler 8 bits de configuração na inicialização e usá-los para escolher um modo de operação.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), dip switch 8 vias 🛒 (ideal 5), LED verde ✅ (40) × 2, resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue as 8 chaves em pinos com pull-up. Evite os pinos de boot.
+2. Leia o valor **uma vez**, no `setup()`, e guarde-o em uma variável.
+3. Use o bit 0 para escolher entre piscar devagar ou depressa e o bit 1 para ligar ou desligar um segundo LED.
+
+:::tip
+Ler a configuração no `setup()` evita que o modo mude sem aviso durante a execução. Para mudar a configuração, reinicie o ESP32.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINOS_DIP[8] = {13, 14, 16, 17, 18, 19, 21, 22};
+uint8_t configuracao = 0;
+
+void setup() {
+  Serial.begin(115200);
+  for (int i = 0; i < 8; i++) {
+    pinMode(PINOS_DIP[i], INPUT_PULLUP);
+    if (digitalRead(PINOS_DIP[i]) == LOW) {
+      configuracao |= (1 << i);
+    }
+  }
+  Serial.printf("Configuração: 0x%02X\n", configuracao);
+  pinMode(25, OUTPUT);
+  pinMode(26, OUTPUT);
+}
+
+void loop() {
+  int intervalo = (configuracao & 0x01) ? 150 : 600;
+  bool segundoLed = configuracao & 0x02;
+
+  digitalWrite(25, !digitalRead(25));
+  digitalWrite(26, segundoLed);
+  delay(intervalo);
+}
+```
+
+</details>
+
+---
+
+### Exercício 6: Display de 7 segmentos com decodificador BCD (4511)
+
+**Objetivo:** mostrar dígitos em um display de 7 segmentos usando um CI decodificador, reduzindo o número de pinos necessários no ESP32.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), display de 7 segmentos cátodo comum ✅ (22), CI CD4511BE ✅ (5), conversor de nível lógico 4 canais ✅ (3), resistores 220Ω ✅ (127), fonte 5 V (ou USB do ESP32 para o lado de 5 V, com cuidado).
+
+**Roteiro:**
+
+1. O CD4511 converte um código BCD de 4 bits (A, B, C, D) em sinais de 7 segmentos. Conecte as entradas A a D ao lado de baixa tensão do conversor de nível lógico.
+2. Ligue LT e BI em nível alto e LE em nível baixo, como na folha de dados.
+3. Escreva na porta os dígitos 0 a 9, em sequência, a cada segundo.
+
+:::danger
+As saídas do CD4511 chegam a 5 V. Não conecte essas saídas diretamente a pinos do ESP32. O conversor de nível lógico faz essa proteção nos sinais que vão para o CI, e o display é ligado ao CI, não ao microcontrolador.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BCD[4] = {25, 26, 27, 14};   // A, B, C, D (via conversor de nível)
+
+void escreverDigito(int d) {
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(BCD[i], (d >> i) & 0x01);
+  }
+}
+
+void setup() {
+  for (int i = 0; i < 4; i++) pinMode(BCD[i], OUTPUT);
+}
+
+void loop() {
+  for (int d = 0; d <= 9; d++) {
+    escreverDigito(d);
+    delay(1000);
+  }
+}
+```
+
+Observação: o CD4511 mostra valores de 0 a 9 e apaga o display para entradas acima de 9. Essa é uma função útil para exibir valores inválidos sem ruído.
+
+</details>
+
+---
+
+### Exercício 7: Teclado matricial 4x4
+
+**Objetivo:** ler 16 teclas com apenas 8 pinos, varrendo linhas e colunas.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), teclado matricial 4x4 ✅ (6), LED vermelho ✅ (45), resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue as 4 linhas em saídas e as 4 colunas em entradas com pull-up.
+2. Para cada linha, coloque-a em LOW e leia as colunas. Uma coluna em LOW indica tecla pressionada na interseção.
+3. Mostre a tecla no monitor serial e acenda um LED para a tecla `*`.
+
+:::note
+Confira no datasheet ou na serigrafia do teclado a ordem dos pinos antes de montar, pois ela varia de fabricante para fabricante.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int LINHAS[4] = {13, 12, 14, 27};
+const int COLUNAS[4] = {26, 25, 33, 32};
+const char TECLAS[4][4] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+
+void setup() {
+  Serial.begin(115200);
+  for (int i = 0; i < 4; i++) {
+    pinMode(LINHAS[i], OUTPUT);
+    digitalWrite(LINHAS[i], HIGH);
+    pinMode(COLUNAS[i], INPUT_PULLUP);
+  }
+  pinMode(2, OUTPUT);
+}
+
+void loop() {
+  for (int l = 0; l < 4; l++) {
+    digitalWrite(LINHAS[l], LOW);
+    for (int c = 0; c < 4; c++) {
+      if (digitalRead(COLUNAS[c]) == LOW) {
+        Serial.println(TECLAS[l][c]);
+        digitalWrite(2, TECLAS[l][c] == '*');
+        while (digitalRead(COLUNAS[c]) == LOW) delay(10);  // espera soltar
+      }
+    }
+    digitalWrite(LINHAS[l], HIGH);
+  }
+}
+```
+
+</details>
+
+---
+
+### Exercício 8: Buzzer ativo e buzzer passivo
+
+**Objetivo:** entender a diferença entre um buzzer que toca sozinho e um que precisa de uma frequência para gerar som.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), buzzer ativo ✅ (8), buzzer passivo ✅ (2), transistor NPN BC547 ✅ (21), resistores 1kΩ ✅ (199).
+
+**Roteiro:**
+
+1. Ligue o buzzer ativo a um pino com um transistor NPN de comando, pois a corrente pode passar de 12 mA. Use o resistor de 1kΩ na base.
+2. Acione o buzzer ativo por 200 ms, a cada 1 segundo.
+3. Troque para o buzzer passivo e gere as notas dó, ré, mi e sol com `tone()`.
+
+:::warning
+Não ligue um buzzer diretamente a um pino do ESP32 sem verificar a corrente. Para a maioria dos buzzers, o transistor evita esforço excessivo do pino.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_ATIVO = 26;
+const int PINO_PASSIVO = 25;
+
+void setup() {
+  pinMode(PINO_ATIVO, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(PINO_ATIVO, HIGH);
+  delay(200);
+  digitalWrite(PINO_ATIVO, LOW);
+  delay(800);
+}
+
+// Buzzer passivo: use tone() em outro programa de teste
+void tocarNotas() {
+  int notas[4] = {262, 294, 330, 392};   // dó, ré, mi, sol
+  for (int i = 0; i < 4; i++) {
+    tone(PINO_PASSIVO, notas[i], 300);
+    delay(400);
+  }
+  noTone(PINO_PASSIVO);
+}
+```
+
+</details>
+
+---
+
+### Exercício 9: Portas lógicas básicas com CIs
+
+**Objetivo:** verificar a tabela verdade de AND, OR, NOT e XOR usando CIs reais e o ESP32 como gerador de entradas.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), CI 74HC08 (porta AND) ✅ (4), CI 7432 (porta OR) ✅ (4), CI 74HC04 (porta NOT) ✅ (8), CI 74HC86 (porta XOR) 🛒 (ideal 10) ou CI 7486 ✅ (1), LED vermelho ✅ (45) × 4, resistores 220Ω ✅ (127), conversor de nível lógico ✅ (3).
+
+**Roteiro:**
+
+1. Alimente os CIs em 5 V ou em 3,3 V, conforme a folha de dados da série HC (que aceita 2 a 6 V). Confirme que o CI aceita a tensão escolhida.
+2. Use duas chaves do ESP32 como entradas A e B.
+3. Ligue as saídas de AND, OR, NOT e XOR a LEDs e confira a tabela verdade para as quatro combinações de A e B.
+
+:::tip
+Faça a tabela verdade no papel antes de testar. Comparar o que você esperava com o que o LED mostra é o principal objetivo do exercício.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Tabela verdade esperada para A e B:
+
+| A | B | AND | OR | XOR | NOT A |
+|---|---|-----|----|-----|-------|
+| 0 | 0 | 0 | 0 | 0 | 1 |
+| 0 | 1 | 0 | 1 | 1 | 1 |
+| 1 | 0 | 0 | 1 | 1 | 0 |
+| 1 | 1 | 1 | 1 | 0 | 0 |
+
+```cpp
+const int PIN_A = 13;
+const int PIN_B = 14;
+const int PIN_AND = 25;
+const int PIN_OR = 26;
+const int PIN_XOR = 27;
+const int PIN_NOT = 33;
+
+void setup() {
+  pinMode(PIN_A, INPUT_PULLUP);
+  pinMode(PIN_B, INPUT_PULLUP);
+  pinMode(PIN_AND, OUTPUT);
+  pinMode(PIN_OR, OUTPUT);
+  pinMode(PIN_XOR, OUTPUT);
+  pinMode(PIN_NOT, OUTPUT);
+}
+
+void loop() {
+  bool a = (digitalRead(PIN_A) == LOW);
+  bool b = (digitalRead(PIN_B) == LOW);
+  // Os CIs recebem as entradas via conversor de nível; aqui o ESP32 lê os resultados
+  digitalWrite(PIN_AND, a && b);
+  digitalWrite(PIN_OR, a || b);
+  digitalWrite(PIN_XOR, a != b);
+  digitalWrite(PIN_NOT, !a);
+}
+```
+
+Este código mostra a lógica de referência no próprio ESP32. A montagem com CIs exige ligar as entradas dos CIs às chaves, e as saídas dos CIs aos LEDs, e comparar os dois resultados.
+
+</details>
+
+---
+
+### Exercício 10: Construindo lógica universal com NAND e NOR
+
+**Objetivo:** perceber que portas NAND e NOR bastam para construir qualquer outra porta lógica.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), CI 4011 (NAND 2 entradas) ✅ (2), CI 7400 (NAND 2 entradas) ✅ (6), CI 7402 (NOR) ✅ (3), CI 4001 (NOR) ✅ (2), CI 7410 (NAND 3 entradas) ✅ (3), CI 7420 (NAND 4 entradas) ✅ (1), LED ✅ (45) × 2.
+
+**Roteiro:**
+
+1. Monte um NOT usando uma porta NAND com as duas entradas ligadas juntas.
+2. Monte um AND com duas NAND, uma seguida da outra com inversão.
+3. Monte um OR com três NAND, usando as inversões das entradas.
+4. Use as chaves do ESP32 como entradas e confira o resultado em um LED.
+
+:::note
+Você deve conseguir fazer um XOR com quatro portas NAND. Desenhe o circuito antes de montar e confira cada etapa com o multímetro.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Circuitos de referência:
+
+- NOT: $\overline{A \cdot A} = \overline{A}$
+- AND: $\overline{\overline{A \cdot B} \cdot \overline{A \cdot B}} = A \cdot B$
+- OR: $\overline{\overline{A} \cdot \overline{B}} = A + B$
+- XOR com 4 NAND: $\overline{\overline{A\cdot \overline{X}} \cdot \overline{B \cdot \overline{X}}}$, com $X = \overline{A \cdot B}$
+
+Como o CI 4001 é NOR, ele também pode gerar NOT com as duas entradas juntas: $\overline{A + A} = \overline{A}$.
+
+</details>
+
+---
+
+### Exercício 11: Armazenando dados com flip-flops e latches
+
+**Objetivo:** guardar um valor de 4 bits com flip-flops tipo D e entender a diferença entre registrar na borda de clock e manter o valor.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), CI 7474 ✅ (3), CI 74175 (4 flip-flops D) ✅ (1), CI 74174 (6 flip-flops D) ✅ (1), CI 40174 (6 flip-flops D) ✅ (2), CI 74373 (latch octal) ✅ (1), LEDs ✅ (45) × 4, resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Use o CI 74175 como um registrador de 4 bits. Ligue as entradas D às chaves do exercício 4, o pino CLK ao ESP32 e as saídas Q a LEDs.
+2. Gere um pulso de clock e observe que o valor só é copiado na borda de subida.
+3. Repita com o CI 74373 e note que, enquanto o pino de habilitação estiver ativo, o valor acompanha a entrada.
+
+:::tip
+Um registrador de 4 bits serve para guardar o número lido do dip switch. Assim, o microcontrolador lê as chaves quando quiser, sem precisar acompanhar cada mudança.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIN_CLK = 25;
+const int PIN_D[4] = {13, 14, 16, 17};   // entradas do registrador
+const int PIN_SAIDA[4] = {19, 21, 22, 23};
+
+void pulsoClock() {
+  digitalWrite(PIN_CLK, LOW);
+  delayMicroseconds(10);
+  digitalWrite(PIN_CLK, HIGH);   // borda de subida copia D para Q
+  delayMicroseconds(10);
+  digitalWrite(PIN_CLK, LOW);
+}
+
+void setup() {
+  pinMode(PIN_CLK, OUTPUT);
+  for (int i = 0; i < 4; i++) pinMode(PIN_D[i], INPUT_PULLUP);
+}
+
+void loop() {
+  pulsoClock();
+  delay(500);
+}
+```
+
+Observação: o registrador só atualiza com a borda. Os LEDs ligados nas saídas Q mostram o valor guardado, não o valor atual das chaves.
+
+</details>
+
+---
+
+### Exercício 12: Contadores digitais
+
+**Objetivo:** contar pulsos com CIs contadores e comparar contagem síncrona com contagem em ondulação (ripple).
+
+**Materiais:** ESP32 DEVKIT ✅ (5), CI 4017 (contador de década) ✅ (9), CI 7490 (contador binário e de década) ✅ (4), CI 74163 (contador síncrono) ✅ (1), CI 4029 (contador up/down) ✅ (5), CI 4020 (contador ripple) ✅ (1), LEDs ✅ (45), resistores 220Ω ✅ (127), conversor de nível ✅ (3).
+
+**Roteiro:**
+
+1. Com o CI 4017, use um botão para avançar uma saída de cada vez. Observe que só uma saída fica em nível alto por vez.
+2. Com o CI 7490, conte de 0 a 9 e registre a sequência binária nas saídas.
+3. Com o CI 4029, configure a contagem para crescente e depois decrescente, usando o pino de up/down controlado pelo ESP32.
+4. Compare a leitura do 4020 (ripple) com a do 74163 (síncrono). Em altas frequências, o ripple acumula atrasos entre bits.
+
+:::note
+Contadores síncronos atualizam todos os bits ao mesmo tempo. Contadores em ripple atualizam um bit depois do outro. Esse atraso aparece no osciloscópio.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIN_CLOCK = 25;   // pulsos para o contador 4017 / 7490 / 4029
+
+void setup() {
+  pinMode(PIN_CLOCK, OUTPUT);
+  Serial.begin(115200);
+}
+
+void loop() {
+  digitalWrite(PIN_CLOCK, HIGH);
+  delay(300);
+  digitalWrite(PIN_CLOCK, LOW);
+  delay(300);
+  Serial.println("pulso");
+}
+```
+
+Para o 4017, o pino de saída ativa muda a cada pulso. Para o 7490, as saídas Q0 a Q3 mostram a contagem binária até 9. Para o 4029, o pino U/D define o sentido da contagem.
+
+</details>
+
+---
+
+### Exercício 13: Expandindo saídas com registrador de deslocamento 74HC595
+
+**Objetivo:** controlar 8 saídas usando apenas 3 pinos do ESP32, com registrador de deslocamento.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), CI 74HC595 ✅ (1 em estoque, ideal 5), LEDs ✅ (45) × 8, resistores 220Ω ✅ (127), display de 7 segmentos ✅ (22).
+
+**Roteiro:**
+
+1. Ligue DS, SH_CP e ST_CP do 74HC595 a 3 pinos do ESP32.
+2. Use `shiftOut()` para enviar um byte e `digitalWrite()` no pino ST_CP para atualizar as saídas.
+3. Crie um efeito de "corrida" de LED, passando um bit aceso de uma saída para a próxima.
+4. Mostre o número de 0 a 99 em dois displays de 7 segmentos (um para dezena e outro para unidade) usando dois 74HC595 em cascata.
+
+:::tip
+Com `shiftOut()`, o primeiro byte enviado vai para o último CI da cadeia. Por isso, em cascata, envie primeiro o byte da segunda saída.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIN_DS = 13;
+const int PIN_SHCP = 14;
+const int PIN_STCP = 27;
+
+void enviarByte(uint8_t valor) {
+  digitalWrite(PIN_STCP, LOW);
+  shiftOut(PIN_DS, PIN_SHCP, MSBFIRST, valor);
+  digitalWrite(PIN_STCP, HIGH);   // atualiza as saídas
+}
+
+void setup() {
+  pinMode(PIN_DS, OUTPUT);
+  pinMode(PIN_SHCP, OUTPUT);
+  pinMode(PIN_STCP, OUTPUT);
+}
+
+void loop() {
+  for (int i = 0; i < 8; i++) {
+    enviarByte(1 << i);
+    delay(150);
+  }
+}
+```
+
+</details>
+
+---
+
+### Exercício 14: Multiplexação e seleção de entradas
+
+**Objetivo:** ler várias entradas com um único pino do ESP32, usando multiplexador digital ou analógico.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), CI 74151 (multiplexador 8 entradas) ✅ (4), CI 74138 (decodificador 3 para 8) 🛒 (ideal 5), CI 4051 (multiplexador analógico 8 canais) 🛒 (ideal 10), CI 74165 (registrador de deslocamento de entrada) 🛒 (ideal 5), botões ✅ (55) × 8.
+
+**Roteiro:**
+
+1. Use o CI 74151 para escolher uma de 8 chaves. Os três pinos de seleção vêm do ESP32 e a saída vai para uma única entrada.
+2. Varra as 8 chaves em sequência e imprima no monitor qual delas está ativa.
+3. Repita a leitura com o CI 74165: uma única linha de dados lê 8 botões, com apenas três pinos de controle.
+4. Faça a comparação com o CI 4051 usado como chave analógica para um divisor de tensão (ver submódulo de Sensores).
+
+:::note
+Multiplexar economiza pinos, mas reduz a velocidade de leitura. Avalie se o tempo de varredura é suficiente para o que você precisa.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIN_SEL[3] = {13, 14, 16};   // A, B, C do 74151
+const int PIN_SAIDA_MUX = 17;          // saída do 74151, com pull-up
+
+void setup() {
+  for (int i = 0; i < 3; i++) pinMode(PIN_SEL[i], OUTPUT);
+  pinMode(PIN_SAIDA_MUX, INPUT_PULLUP);
+  Serial.begin(115200);
+}
+
+void loop() {
+  for (int canal = 0; canal < 8; canal++) {
+    for (int b = 0; b < 3; b++) {
+      digitalWrite(PIN_SEL[b], (canal >> b) & 0x01);
+    }
+    delayMicroseconds(10);
+    bool ativo = (digitalRead(PIN_SAIDA_MUX) == LOW);
+    if (ativo) Serial.printf("Chave %d ativa\n", canal);
+  }
+  delay(200);
+}
+```
+
+</details>
+
+---
+
+### Exercício 15: Acionando cargas com relé e transistor
+
+**Objetivo:** controlar uma carga de maior corrente (como um relé) a partir de um pino de 3,3 V, usando transistor e diodo de proteção.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), relé 5 V 🛒 (ideal 5), transistor NPN BC548 ✅ (9), diodo 1N4007 ✅ (41), resistor 1kΩ ✅ (199), LED ✅ (45) para indicar o estado, fonte 5 V ✅ (fonte 12 V 5 A ✅ (2) com regulador, ou conversor DC-DC ✅ (5)).
+
+**Roteiro:**
+
+1. Ligue a bobina do relé entre 5 V e o coletor do transistor. Coloque o diodo 1N4007 em paralelo com a bobina, com o cátodo no 5 V.
+2. Ligue a base do transistor ao GPIO 26 pelo resistor de 1kΩ. Emissor no GND.
+3. Acione o relé por 2 segundos a cada 5 segundos e observe o clique mecânico.
+
+:::danger
+Relés comutam tensões de rede elétrica. Para este exercício, use apenas a bobina do relé em baixa tensão. **Nunca** conecte a rede elétrica (127 V ou 220 V) sem orientação de um professor ou técnico habilitado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIN_RELE = 26;
+
+void setup() {
+  pinMode(PIN_RELE, OUTPUT);
+  digitalWrite(PIN_RELE, LOW);
+}
+
+void loop() {
+  digitalWrite(PIN_RELE, HIGH);   // transistor satura e a bobina energiza
+  delay(2000);
+  digitalWrite(PIN_RELE, LOW);
+  delay(3000);
+}
+```
+
+Explicação: o transistor funciona como chave. O diodo de roda livre absorve a tensão reversa gerada quando a bobina desenergiza, protegendo o transistor.
+
+</details>

@@ -1,0 +1,3085 @@
+---
+id: exercicios-sensores
+title: Exercícios - Sensores
+sidebar_label: 4. Sensores
+sidebar_position: 4
+description: Lista de exercícios com todos os sensores, displays, módulos de energia e atuadores do inventário, com no máximo dois sensores por exercício, do básico ao avançado.
+---
+
+Esta lista cobre **todos os sensores do inventário**, tenham ou não sido comprados ainda. Cada exercício usa **no máximo dois sensores**, e os atuadores são incluídos quando necessários. A lista começa com chaves e sensores digitais, passa pelos analógicos, sensores de distância, temperatura e ambientais, e termina com displays, energia e atuadores. No fim há uma seção com os C.Is e transistores que ainda não tinham exercício.
+
+## 🛠 Requisitos e Materiais
+
+- **ESP32 DEVKIT** (estoque: 5) e cabo USB
+- **Arduino IDE** ou **PlatformIO** com o pacote *esp32 by Espressif* (versão 3.x)
+- Protoboard, jumpers, resistores e LEDs (estoque alto)
+- Multímetro para conferir tensões antes de ligar qualquer módulo
+
+:::note
+**Legenda de estoque.** ✅ (quantidade, ideal X) indica item que já está no laboratório. 🛒 (ideal X) indica item que ainda precisa ser comprado. Itens com quantidade 0 aparecem como 🛒.
+:::
+
+:::warning
+**Tensão lógica.** O ESP32 aceita no máximo 3,3 V nos pinos de entrada. Vários módulos (HC-SR04, alguns displays, o RFID RC522 e o AS608) funcionam em 5 V. Use divisor de tensão ou conversor de nível lógico antes de ligar esses sinais aos pinos do ESP32.
+:::
+
+:::danger
+**Pinos.** Use apenas os pinos GPIO 32 a 36 e 39 como entradas analógicas, pois o ADC2 não funciona com WiFi ligado. Evite GPIO 0, 2, 12 e 15 para cargas, pois são pinos de inicialização.
+:::
+
+## 📝 Lista de Exercícios
+
+## Parte 1: Chaves e sensores digitais
+
+### Exercício 1: Sensor de toque capacitivo
+
+**Objetivo:** ler um toque sem contato mecânico com o módulo TTP223B e comparar com o sensor de toque KY-036.
+
+**Materiais:** sensor TTP223B ✅ (2, ideal 2), sensor KY-036 ✅ (1, ideal 0), LED vermelho ✅ (45, ideal 20).
+
+**Roteiro:**
+
+1. Ligue o TTP223B ao GPIO 13 e o KY-036 ao GPIO 14.
+2. Acenda um LED a cada toque detectado por cada sensor.
+3. Compare a sensibilidade dos dois módulos.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int TOQUE_A = 13, TOQUE_B = 14, LED = 26;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(TOQUE_A, INPUT);
+  pinMode(TOQUE_B, INPUT);
+  pinMode(LED, OUTPUT);
+}
+
+void loop() {
+  bool a = digitalRead(TOQUE_A) == HIGH;
+  bool b = digitalRead(TOQUE_B) == LOW;   // KY-036 costuma ser ativo em LOW
+  digitalWrite(LED, a || b);
+  Serial.printf("A=%d B=%d\n", a, b);
+  delay(50);
+}
+```
+
+O TTP223B sai em HIGH quando há toque. Já o KY-036 tem saída que depende do ajuste do módulo, por isso confira o nível no monitor serial antes de depender dele.
+
+</details>
+
+---
+
+### Exercício 2: Detecção de chama e alarme sonoro
+
+**Objetivo:** detectar chama com o sensor KY-026 e acionar um buzzer ativo.
+
+**Materiais:** sensor de chama KY-026 ✅ (1, ideal 0), buzzer ativo ✅ (8, ideal 10).
+
+**Roteiro:**
+
+1. Ligue a saída DO do KY-026 ao GPIO 27 e o buzzer ao GPIO 25.
+2. Quando a chama for detectada, ligue o buzzer.
+3. Teste aproximando um isqueiro de forma segura, à distância.
+
+:::warning
+Não exponha o sensor a chamas reais de forma próxima. Use um isqueiro apenas à distância e nunca deixe o teste sem supervisão.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int CHAMA = 27, BUZZER = 25;
+
+void setup() {
+  pinMode(CHAMA, INPUT);
+  pinMode(BUZZER, OUTPUT);
+}
+
+void loop() {
+  bool detectou = digitalRead(CHAMA) == LOW;   // saída ativa em LOW
+  digitalWrite(BUZZER, detectou);
+}
+```
+
+Muitos módulos de chama têm um potenciômetro de sensibilidade. Ajuste-o até o sensor reagir apenas à chama, e não à luz ambiente.
+
+</details>
+
+---
+
+### Exercício 3: Inclinação com dois sensores
+
+**Objetivo:** detectar inclinação com o sensor de mercúrio KY-017 e o sensor de inclinação KY-020.
+
+**Materiais:** sensor KY-017 ✅ (1, ideal 1), sensor KY-020 ✅ (1, ideal 1), LED verde ✅ (40, ideal 20).
+
+**Roteiro:**
+
+1. Ligue o KY-017 ao GPIO 25 e o KY-020 ao GPIO 26, ambos com pull-up interno.
+2. Acenda o LED quando qualquer um dos sensores detectar inclinação.
+3. Compare o tempo de resposta dos dois sensores ao inclinar a placa.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int INCL_A = 25, INCL_B = 26, LED = 14;
+
+void setup() {
+  pinMode(INCL_A, INPUT_PULLUP);
+  pinMode(INCL_B, INPUT_PULLUP);
+  pinMode(LED, OUTPUT);
+}
+
+void loop() {
+  bool a = digitalRead(INCL_A) == LOW;
+  bool b = digitalRead(INCL_B) == LOW;
+  digitalWrite(LED, a || b);
+}
+```
+
+O KY-017 é um sensor de mercúrio: ele faz contato quando inclinado, e por isso pode oscilar. Use um pequeno atraso de filtragem se o LED piscar sem motivo.
+
+</details>
+
+---
+
+### Exercício 4: Vibração e batida
+
+**Objetivo:** detectar vibrações com os sensores KY-002 e KY-031, e contar eventos.
+
+**Materiais:** sensor KY-002 ✅ (1, ideal 1), sensor KY-031 ✅ (1, ideal 1).
+
+**Roteiro:**
+
+1. Ligue o KY-002 ao GPIO 18 e o KY-031 ao GPIO 19.
+2. Use uma interrupção para contar cada vibração detectada.
+3. Bata sobre uma mesa e observe a contagem no monitor serial.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int VIB_A = 18, VIB_B = 19;
+volatile unsigned long contA = 0, contB = 0;
+
+void IRAM_ATTR aoVibrarA() { contA++; }
+void IRAM_ATTR aoVibrarB() { contB++; }
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(VIB_A, INPUT);
+  pinMode(VIB_B, INPUT);
+  attachInterrupt(VIB_A, aoVibrarA, RISING);
+  attachInterrupt(VIB_B, aoVibrarB, RISING);
+}
+
+void loop() {
+  Serial.printf("A=%lu B=%lu\n", contA, contB);
+  delay(1000);
+}
+```
+
+Como a interrupção pode disparar várias vezes com um único impacto, use o filtro de tempo do exercício 2 do submódulo de Interrupções de Hardware.
+
+</details>
+
+---
+
+### Exercício 5: Contato magnético e chave de fim de curso
+
+**Objetivo:** usar o sensor de inclinação de mercúrio KY-027 e uma chave de fim de curso como detectores de posição mecânica.
+
+**Materiais:** sensor KY-027 ✅ (2, ideal 0), chave de fim de curso ✅ (5, ideal 5).
+
+**Roteiro:**
+
+1. Ligue o KY-027 ao GPIO 16 e a chave de fim de curso ao GPIO 17, ambos com pull-up.
+2. Imprima o estado de cada um quando houver mudança.
+3. Compare o comportamento da chave mecânica com o do sensor de mercúrio.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int MERC = 16, FIM = 17;
+int antesM = -1, antesF = -1;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(MERC, INPUT_PULLUP);
+  pinMode(FIM, INPUT_PULLUP);
+}
+
+void loop() {
+  int m = digitalRead(MERC), f = digitalRead(FIM);
+  if (m != antesM || f != antesF) {
+    Serial.printf("Mercurio=%d Fim=%d\n", m, f);
+    antesM = m; antesF = f;
+  }
+  delay(20);
+}
+```
+
+A chave de fim de curso é normalmente fechada ou aberta conforme a ligação. Teste os dois estados antes de definir a lógica.
+
+</details>
+
+---
+
+### Exercício 6: Sensores reed (contato magnético)
+
+**Objetivo:** detectar a presença de um ímã com os sensores reed KY-025 e KY-021.
+
+**Materiais:** sensor KY-025 ✅ (1, ideal 5), sensor KY-021 ✅ (1, ideal 0), ímã de neodímio.
+
+**Roteiro:**
+
+1. Ligue o KY-025 ao GPIO 19 e o KY-021 ao GPIO 23, ambos com pull-up.
+2. Aproxime o ímã de cada sensor e observe a mudança de nível.
+3. Use o sensor como porta: acenda um LED quando a porta estiver aberta.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int REED_A = 19, REED_B = 23, LED = 26;
+
+void setup() {
+  pinMode(REED_A, INPUT_PULLUP);
+  pinMode(REED_B, INPUT_PULLUP);
+  pinMode(LED, OUTPUT);
+}
+
+void loop() {
+  bool imaA = digitalRead(REED_A) == LOW;   // reed fecha com o ímã
+  bool imaB = digitalRead(REED_B) == LOW;
+  digitalWrite(LED, !(imaA && imaB));       // LED acende se qualquer porta abrir
+}
+```
+
+O reed é um contato de vidro dentro de um tubo. Ele é simples e confiável, mas responde apenas à presença do ímã, sem medir a distância.
+
+</details>
+
+---
+
+### Exercício 7: Sensores de efeito Hall digital e analógico
+
+**Objetivo:** comparar a saída digital do sensor KY-003 com a saída analógica do KY-035.
+
+**Materiais:** sensor Hall KY-003 ✅ (1, ideal 1), sensor Hall KY-035 ✅ (1, ideal 1), ímã de neodímio.
+
+**Roteiro:**
+
+1. Ligue o KY-003 ao GPIO 21 (digital) e o KY-035 ao GPIO 34 (analógico, somente entrada).
+2. Aproxime o ímã e observe a leitura digital e a leitura analógica.
+3. Descreva a diferença entre um sinal que muda em um limiar e um sinal proporcional ao campo.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int HALL_DIG = 21, HALL_ANA = 34;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(HALL_DIG, INPUT);
+}
+
+void loop() {
+  int digital = digitalRead(HALL_DIG);
+  int analogico = analogRead(HALL_ANA);
+  Serial.printf("Digital=%d Analogico=%d\n", digital, analogico);
+  delay(100);
+}
+```
+
+O KY-035 possui potenciômetro de ajuste. Gire-o para definir o limiar da saída digital, e confira o efeito no valor analógico.
+
+</details>
+
+---
+
+### Exercício 8: Hall com retenção (latch)
+
+**Objetivo:** usar o sensor Hall KY-024 e o sensor bipolar com retenção US1881 para entender a diferença entre um sensor que muda de estado e um que memoriza.
+
+**Materiais:** sensor Hall KY-024 ✅ (1, ideal 0), sensor US1881 🛒 (ideal 5), ímã de neodímio.
+
+**Roteiro:**
+
+1. Ligue o KY-024 ao GPIO 22 e o US1881 ao GPIO 33.
+2. Aproxime e afaste o ímã, e observe quando a saída muda.
+3. No US1881, observe que o estado permanece após o ímã ser retirado, até que o campo oposto seja aplicado.
+
+:::note
+Se o US1881 não estiver disponível ainda, faça o exercício só com o KY-024 e leia o datasheet do US1881 para comparar o comportamento.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int HALL_KY = 22, HALL_LATCH = 33;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(HALL_KY, INPUT);
+  pinMode(HALL_LATCH, INPUT);
+}
+
+void loop() {
+  Serial.printf("KY-024=%d US1881=%d\n", digitalRead(HALL_KY), digitalRead(HALL_LATCH));
+  delay(100);
+}
+```
+
+Um sensor com retenção precisa de um campo oposto para mudar de estado. Essa característica é útil para medir rotação de eixos sem perder pulsos.
+
+</details>
+
+---
+
+### Exercício 9: Sensores Hall lineares e digitais unipolares
+
+**Objetivo:** comparar o sensor digital unipolar A3144E com o sensor linear AH49E.
+
+**Materiais:** sensor A3144E 🛒 (ideal 5), sensor AH49E 🛒 (ideal 5), ímã de neodímio.
+
+**Roteiro:**
+
+1. Ligue o A3144E ao GPIO 35 e o AH49E ao GPIO 36, ambos em entrada.
+2. Meça o nível do AH49E com `analogRead` e aproxime o ímã em diferentes distâncias.
+3. Faça um gráfico da leitura analógica pela distância.
+
+:::note
+Estes dois sensores estão listados com quantidade 0 no inventário. Use este exercício como roteiro de montagem para quando forem comprados, e confirme a pinagem no datasheet antes de ligar.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int DIG_A3144 = 35, ANA_AH49 = 36;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(DIG_A3144, INPUT);
+}
+
+void loop() {
+  Serial.printf("A3144E=%d AH49E=%d\n", digitalRead(DIG_A3144), analogRead(ANA_AH49));
+  delay(100);
+}
+```
+
+O AH49E é alimentado em 5 V em muitas placas e a saída pode passar de 3,3 V. Use divisor de tensão antes do ESP32.
+
+</details>
+
+---
+
+### Exercício 10: Encoders rotativos
+
+**Objetivo:** contar pulsos de rotação com os encoders KY-040 e HW-040, e tratar o efeito de tremor (bounce) dos contatos.
+
+**Materiais:** encoder KY-040 ✅ (1, ideal 5), sensor de rotação HW-040 ✅ (1, ideal 3).
+
+**Roteiro:**
+
+1. Ligue o canal CLK do KY-040 ao GPIO 18, o DT ao GPIO 19 e o botão ao GPIO 23.
+2. Ligue o HW-040 ao GPIO 32 (CLK) e GPIO 33 (DT).
+3. Conte os pulsos em cada direção e imprima a posição.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int KY_CLK = 18, KY_DT = 19;
+volatile long posicao = 0;
+int ultimoClk;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(KY_CLK, INPUT);
+  pinMode(KY_DT, INPUT);
+  ultimoClk = digitalRead(KY_CLK);
+}
+
+void loop() {
+  int clk = digitalRead(KY_CLK);
+  if (clk != ultimoClk && clk == HIGH) {
+    posicao += (digitalRead(KY_DT) != clk) ? 1 : -1;
+    Serial.println(posicao);
+  }
+  ultimoClk = clk;
+}
+```
+
+Para contagem confiável em alta velocidade, use interrupções (exercício 4 do submódulo de Interrupções de Hardware). O HW-040 segue a mesma lógica de quadratura.
+
+</details>
+
+---
+## Parte 2: Sensores analógicos e de luz
+
+### Exercício 11: Potenciômetros lineares e logarítmicos
+
+**Objetivo:** comparar a resposta de um potenciômetro linear e de um logarítmico lidos pelo conversor analógico-digital.
+
+**Materiais:** potenciômetro linear B10KΩ ✅ (9, ideal 10), potenciômetro logarítmico A10KΩ ✅ (8, ideal 5).
+
+**Roteiro:**
+
+1. Ligue o terminal central do B10KΩ ao GPIO 32 e o do A10KΩ ao GPIO 33. Os extremos vão para 3,3 V e GND.
+2. Leia os dois valores e imprima em porcentagem.
+3. Gire os dois potenciômetros e compare como a leitura varia ao longo do curso.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int LIN = 32, LOG = 33;
+
+void setup() {
+  Serial.begin(115200);
+  analogReadResolution(12);   // 0 a 4095
+}
+
+void loop() {
+  float linear = analogRead(LIN) * 100.0 / 4095.0;
+  float logaritmico = analogRead(LOG) * 100.0 / 4095.0;
+  Serial.printf("Linear=%.1f%%  Log=%.1f%%\n", linear, logaritmico);
+  delay(200);
+}
+```
+
+O potenciômetro logarítmico varia o valor de forma não proporcional ao giro, e é usado em controles de volume. O linear varia de forma proporcional.
+
+</details>
+
+---
+
+### Exercício 12: Fotorresistores (LDR) grande e pequeno
+
+**Objetivo:** medir a luminosidade com dois LDRs de tamanhos diferentes, e comparar a faixa de resposta de cada um.
+
+**Materiais:** LDR grande ✅ (22, ideal 5), LDR pequeno ✅ (29, ideal 10), resistores de 10KΩ ✅ (111, ideal 30) × 2.
+
+**Roteiro:**
+
+1. Monte um divisor de tensão para cada LDR com resistor de 10KΩ, e ligue o ponto médio ao GPIO 32 e ao GPIO 33.
+2. Cubra os sensores com a mão e exponha-os à luz de uma lâmpada, e registre as leituras.
+3. Calcule a resistência do LDR a partir da tensão lida.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int LDR_G = 32, LDR_P = 33;
+const float R_FIXO = 10000.0;
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  for (int pino : {LDR_G, LDR_P}) {
+    int leitura = analogRead(pino);
+    float tensao = leitura * 3.3 / 4095.0;
+    float r = R_FIXO * (3.3 - tensao) / tensao;   // LDR ligado ao 3,3 V
+    Serial.printf("Pino %d: %d  R=%.0f ohm\n", pino, leitura, r);
+  }
+  delay(500);
+}
+```
+
+Com pouca luz, a resistência do LDR sobe muito. Por isso, a resposta não é linear, e use uma escala logarítmica se quiser comparar faixas de luz.
+
+</details>
+
+---
+
+### Exercício 13: Luminosidade digital e sensor ambiental de precisão
+
+**Objetivo:** comparar um módulo LDR com saída digital (KY-018) com o sensor de luz ambiente VEML7700.
+
+**Materiais:** módulo KY-018 ✅ (1, ideal 0), sensor VEML7700 🛒 (ideal 5), comunicação I2C com pull-up.
+
+**Roteiro:**
+
+1. Ligue o KY-018 ao GPIO 27 (saída digital) e o VEML7700 ao barramento I2C (GPIO 21 e 22).
+2. Ajuste o limiar do KY-018 pelo potenciômetro e observe quando a saída muda.
+3. Compare a leitura em lux do VEML7700 com a saída do KY-018.
+
+:::note
+O VEML7700 está com quantidade 0 no inventário. Use este exercício como guia de montagem, e consulte o datasheet para o endereço I2C e a biblioteca usada.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include <Adafruit_VEML7700.h>
+
+Adafruit_VEML7700 veml;
+const int KY018 = 27;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  pinMode(KY018, INPUT);
+  veml.begin();
+}
+
+void loop() {
+  Serial.printf("KY-018=%d  Lux=%.1f\n", digitalRead(KY018), veml.readLux());
+  delay(500);
+}
+```
+
+O VEML7700 entrega valores em lux, o que o torna mais útil para medições do que a saída binária do KY-018.
+
+</details>
+
+---
+
+### Exercício 14: Sensores ópticos de reflexão e de fenda
+
+**Objetivo:** detectar a presença de objetos com o sensor reflexivo TRCT5000 e a barreira óptica KY-010.
+
+**Materiais:** sensor TRCT5000 ✅ (9, ideal 5), sensor KY-010 ✅ (1, ideal 1), objeto branco e preto para teste.
+
+**Roteiro:**
+
+1. Ligue a saída do TRCT5000 ao GPIO 25 (via divisor) e a saída do KY-010 ao GPIO 26.
+2. Passe uma folha branca e uma preta em frente ao TRCT5000 e compare as leituras.
+3. Interrompa o feixe do KY-010 com um objeto e registre o evento.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int REFLEX = 25, FENDA = 26;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(REFLEX, INPUT);
+  pinMode(FENDA, INPUT);
+}
+
+void loop() {
+  Serial.printf("Reflexivo=%d  Fenda=%d\n",
+                analogRead(REFLEX), digitalRead(FENDA));
+  delay(100);
+}
+```
+
+O TRCT5000 reflete mais luz em superfícies claras. Por isso, o limiar que separa preto e branco depende da distância e da iluminação.
+
+</details>
+
+---
+
+### Exercício 15: Sensor de cor TCS3200
+
+**Objetivo:** identificar a cor de um objeto com o sensor TCS3200, lendo as frequências de cada filtro.
+
+**Materiais:** sensor TCS3200 ✅ (3, ideal 3), objetos coloridos, LED branco ✅ (20, ideal 20) para iluminação.
+
+**Roteiro:**
+
+1. Ligue S0 e S1 ao GPIO 16 e 17, S2 e S3 ao GPIO 18 e 19, e a saída OUT ao GPIO 32.
+2. Para cada filtro (vermelho, verde, azul), meça o período do sinal OUT com `pulseIn`.
+3. Compare as leituras com os valores de referência de cada cor.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int S0 = 16, S1 = 17, S2 = 18, S3 = 19, OUT_COR = 32;
+
+long lerFiltro(bool s2, bool s3) {
+  digitalWrite(S2, s2);
+  digitalWrite(S3, s3);
+  return pulseIn(OUT_COR, LOW);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(S0, OUTPUT); pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT); pinMode(S3, OUTPUT);
+  pinMode(OUT_COR, INPUT);
+  digitalWrite(S0, HIGH);   // escala 20%
+  digitalWrite(S1, LOW);
+}
+
+void loop() {
+  long r = lerFiltro(LOW, LOW);
+  long g = lerFiltro(HIGH, HIGH);
+  long b = lerFiltro(LOW, HIGH);
+  Serial.printf("R=%ld G=%ld B=%ld\n", r, g, b);
+  delay(500);
+}
+```
+
+Valores menores de período indicam mais intensidade daquela cor. Calibre com um branco e um preto antes de comparar cores.
+
+</details>
+
+---
+
+### Exercício 16: LEDs RGB e LED de sete cores como atuadores
+
+**Objetivo:** usar o LED RGB KY-009 e o LED de 7 cores KY-034 para mostrar estados de um sistema.
+
+**Materiais:** LED RGB KY-009 ✅ (1, ideal 0), LED 7 cores KY-034 ✅ (2, ideal 0).
+
+**Roteiro:**
+
+1. Ligue as cores do KY-009 aos GPIO 25, 26 e 27, e o KY-034 ao GPIO 14.
+2. Mostre verde para normal, amarelo para alerta e vermelho para erro.
+3. Troque a cor do KY-034 a cada segundo para testar o sinal.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int R = 25, G = 26, B = 27;
+
+void cor(bool r, bool g, bool b) {
+  digitalWrite(R, r); digitalWrite(G, g); digitalWrite(B, b);
+}
+
+void setup() {
+  pinMode(R, OUTPUT); pinMode(G, OUTPUT); pinMode(B, OUTPUT);
+}
+
+void loop() {
+  cor(0, 1, 0);   // verde
+  delay(1000);
+  cor(1, 1, 0);   // amarelo
+  delay(1000);
+  cor(1, 0, 0);   // vermelho
+  delay(1000);
+}
+```
+
+Muitos módulos KY-009 são de anodo comum, o que inverte os níveis. Se a cor sair errada, inverta a lógica no código.
+
+</details>
+
+---
+
+### Exercício 17: Semáforo e emissor de laser
+
+**Objetivo:** montar um semáforo com o módulo de semáforo e controlar um emissor de laser KY-008 como atuador.
+
+**Materiais:** módulo semáforo ✅ (1, ideal 0), emissor de laser KY-008 ✅ (1, ideal 5), resistores de 220Ω ✅ (127, ideal 30).
+
+**Roteiro:**
+
+1. Ligue o vermelho, o amarelo e o verde do semáforo aos GPIO 25, 26 e 27.
+2. Faça o ciclo verde, amarelo, vermelho com o tempo de cada cor definido em constantes.
+3. Ligue o laser ao GPIO 14 e acenda-o somente quando o semáforo estiver vermelho.
+
+:::danger
+Nunca aponte um laser para os olhos, nem para outras pessoas. Use apenas módulos de baixa potência e mantenha o feixe abaixo da altura dos olhos.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int VERM = 25, AMAR = 26, VERDE = 27, LASER = 14;
+
+void setup() {
+  pinMode(VERM, OUTPUT); pinMode(AMAR, OUTPUT);
+  pinMode(VERDE, OUTPUT); pinMode(LASER, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(VERDE, HIGH); digitalWrite(LASER, LOW); delay(3000);
+  digitalWrite(VERDE, LOW); digitalWrite(AMAR, HIGH); delay(1000);
+  digitalWrite(AMAR, LOW); digitalWrite(VERM, HIGH); digitalWrite(LASER, HIGH); delay(3000);
+  digitalWrite(VERM, LOW);
+}
+```
+
+Use o semáforo como atuador visual e o laser como atuador de sinal. Nenhum deles depende de leitura de sensor neste exercício.
+
+</details>
+
+---
+
+### Exercício 18: Receptor infravermelho com controle remoto
+
+**Objetivo:** decodificar sinais de um controle remoto IR com o receptor KY-022 e o receptor TSOP4838.
+
+**Materiais:** receptor KY-022 ✅ (2, ideal 0), receptor TSOP4838 ✅ (5, ideal 5), controle remoto IR comum, biblioteca IRremote.
+
+**Roteiro:**
+
+1. Ligue o KY-022 ao GPIO 18 e o TSOP4838 ao GPIO 19.
+2. Pressione botões do controle e veja o código de cada tecla no monitor serial.
+3. Compare os dois receptores: quantos códigos cada um recebe com a mesma tecla.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <IRremote.hpp>
+
+const int IR_A = 18, IR_B = 19;
+
+void setup() {
+  Serial.begin(115200);
+  IrReceiver.begin(IR_A, DISABLE_LED_FEEDBACK);
+  pinMode(IR_B, INPUT);
+}
+
+void loop() {
+  if (IrReceiver.decode()) {
+    Serial.printf("KY-022 codigo: 0x%lX\n", IrReceiver.decodedIRData.decodedRawData);
+    IrReceiver.resume();
+  }
+  Serial.printf("TSOP4838 nivel: %d\n", digitalRead(IR_B));
+  delay(50);
+}
+```
+
+Os dois receptores operam em 38 kHz. O TSOP4838 é a versão para uso direto com a biblioteca, e o KY-022 é mais sensível a interferência de luz ambiente.
+
+</details>
+
+---
+
+### Exercício 19: Receptor IR VS1838B e sensor de obstáculo IR
+
+**Objetivo:** usar o receptor VS1838B para decodificar comandos e o sensor de obstáculo KY-032 para detectar objetos próximos.
+
+**Materiais:** receptor VS1838B 🛒 (ideal 5), sensor KY-032 ✅ (1, ideal 1), controle remoto IR.
+
+**Roteiro:**
+
+1. Ligue o VS1838B ao GPIO 21 e o KY-032 ao GPIO 22.
+2. Decodifique as teclas do controle no VS1838B.
+3. Aproxime a mão do KY-032 e confirme a detecção.
+
+:::note
+O VS1838B está com quantidade 0. O exercício vale como montagem para quando ele for comprado; confirme a pinagem no datasheet.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <IRremote.hpp>
+
+const int OBSTACULO = 22;
+
+void setup() {
+  Serial.begin(115200);
+  IrReceiver.begin(21, DISABLE_LED_FEEDBACK);
+  pinMode(OBSTACULO, INPUT);
+}
+
+void loop() {
+  if (IrReceiver.decode()) {
+    Serial.printf("Tecla: 0x%lX\n", IrReceiver.decodedIRData.decodedRawData);
+    IrReceiver.resume();
+  }
+  Serial.printf("Obstaculo=%d\n", digitalRead(OBSTACULO) == LOW);
+  delay(100);
+}
+```
+
+O KY-032 é um par emissor e receptor IR, e a saída muda quando um objeto reflete o feixe. O VS1838B é o receptor padrão de controles remotos.
+
+</details>
+
+---
+
+### Exercício 20: Batimentos cardíacos e oximetria com MAX30102
+
+**Objetivo:** medir a frequência cardíaca com o sensor MAX30102 e comparar com um sensor simples de batimento por dedo, o KY-039.
+
+**Materiais:** sensor MAX30102 ✅ (1, ideal 5), sensor KY-039 ✅ (1, ideal 3), dedo para teste.
+
+**Roteiro:**
+
+1. Ligue o MAX30102 ao barramento I2C (GPIO 21 e 22), e o KY-039 a um pino analógico (GPIO 34).
+2. Coloque o dedo sobre o MAX30102 e leia o sinal de infravermelho.
+3. Conte os picos do sinal para estimar os batimentos por minuto.
+
+:::warning
+Estes valores não são de uso médico. Não use o resultado para decisões de saúde. Confira a alimentação em 3,3 V, pois o MAX30102 é sensível a tensões acima do especificado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include "MAX30105.h"          // biblioteca SparkFun MAX3010x
+#include "heartRate.h"
+
+MAX30105 sensor;
+const int KY039 = 34;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  sensor.begin(Wire, I2C_SPEED_FAST);
+  sensor.setup();               // configuração padrão
+}
+
+void loop() {
+  long ir = sensor.getIR();
+  if (checkForBeat(ir)) {
+    Serial.printf("Batida detectada. KY-039=%d\n", analogRead(KY039));
+  }
+  delay(10);
+}
+```
+
+A biblioteca `checkForBeat` identifica picos no sinal. Para calcular BPM, use a média dos intervalos entre batidas detectadas.
+
+</details>
+
+---
+
+## Parte 3: Movimento, distância e posição
+
+### Exercício 21: Detecção de movimento com dois sensores PIR
+
+**Objetivo:** detectar presença com o sensor PIR HC-SR501 e o módulo PIR EKMB, e comparar o alcance e o tempo de atraso de cada um.
+
+**Materiais:** sensor HC-SR501 ✅ (8, ideal 5), módulo PIR EKMB 🛒 (ideal 5), LED verde ✅ (40, ideal 20).
+
+**Roteiro:**
+
+1. Ligue o HC-SR501 ao GPIO 25 e o EKMB ao GPIO 26.
+2. Aguarde o período de aquecimento de cerca de 60 segundos sem movimento.
+3. Acenda um LED para cada sensor que detectar presença, e registre o tempo entre detecções.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIR_A = 25, PIR_B = 26, LED = 14;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIR_A, INPUT);
+  pinMode(PIR_B, INPUT);
+  pinMode(LED, OUTPUT);
+  Serial.println("Aquecendo...");
+  delay(60000);
+}
+
+void loop() {
+  bool a = digitalRead(PIR_A);
+  bool b = digitalRead(PIR_B);
+  digitalWrite(LED, a || b);
+  Serial.printf("A=%d B=%d\n", a, b);
+  delay(200);
+}
+```
+
+Os módulos PIR têm potenciômetros de sensibilidade e de tempo. Ajuste o tempo para o menor valor no começo, e aumente se o sinal oscilar.
+
+</details>
+
+---
+
+### Exercício 22: Distância por ultrassom e por laser
+
+**Objetivo:** medir distâncias com o HC-SR04 (ultrassom) e o VL53 (laser de tempo de voo), e comparar a precisão de cada um.
+
+**Materiais:** sensor HC-SR04 ✅ (8, ideal 5), sensor VL53 🛒 (ideal 5), resistores de 1KΩ ✅ (199) e 2KΩ ✅ (19) para o divisor do ECHO.
+
+**Roteiro:**
+
+1. Ligue o TRIG do HC-SR04 ao GPIO 23 e o ECHO ao GPIO 35 via divisor de tensão (1KΩ e 2KΩ).
+2. Ligue o VL53 ao barramento I2C.
+3. Meça a mesma distância com os dois sensores e compare os resultados.
+
+:::warning
+O ECHO do HC-SR04 sai em 5 V. Use o divisor 1KΩ e 2KΩ para levar o sinal a cerca de 3,3 V. Ligar o ECHO direto ao ESP32 pode danificar o pino.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include <Adafruit_VL53L0X.h>
+
+const int TRIG = 23, ECHO = 35;
+Adafruit_VL53L0X laser;
+
+float distanciaUltrassom() {
+  digitalWrite(TRIG, LOW); delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH); delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+  long tempo = pulseIn(ECHO, HIGH, 30000);
+  return tempo * 0.0343 / 2.0;   // cm
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+  Wire.begin(21, 22);
+  laser.begin();
+}
+
+void loop() {
+  VL53L0X_RangingMeasurementData_t medida;
+  laser.rangingTest(&medida, false);
+  Serial.printf("Ultrassom=%.1f cm  Laser=%d mm\n",
+                distanciaUltrassom(),
+                medida.RangeStatus != 4 ? medida.RangeMilliMeter : -1);
+  delay(300);
+}
+```
+
+O ultrassom sofre com superfícies inclinadas e absorventes, e o laser é mais preciso em distâncias curtas. Compare os dois em cada caso.
+
+</details>
+
+---
+
+### Exercício 23: Conversor de nível lógico com o HC-SR04
+
+**Objetivo:** usar o conversor de nível lógico de 4 canais para levar o sinal de 5 V do ECHO ao ESP32, sem divisor resistivo.
+
+**Materiais:** conversor de nível lógico 4 canais ✅ (3, ideal 5), sensor HC-SR04 ✅ (8, ideal 5).
+
+**Roteiro:**
+
+1. Alimente o lado de alta tensão (HV) do conversor com 5 V, e o lado de baixa tensão (LV) com 3,3 V.
+2. Ligue o ECHO do HC-SR04 ao canal HV, e a saída LV ao GPIO 35.
+3. Verifique com o multímetro que a saída em nível alto fica perto de 3,3 V.
+
+:::note
+O conversor pode ser bidirecional. Para o HC-SR04, use apenas o sentido de 5 V para 3,3 V, pois o TRIG é lido como entrada de 5 V e aceita 3,3 V.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int TRIG = 23, ECHO_LV = 35;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO_LV, INPUT);
+}
+
+void loop() {
+  digitalWrite(TRIG, LOW); delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH); delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+  long tempo = pulseIn(ECHO_LV, HIGH, 30000);
+  Serial.printf("Distancia: %.1f cm\n", tempo * 0.0343 / 2.0);
+  delay(200);
+}
+```
+
+O conversor evita o divisor de tensão e mantém a leitura estável em alta velocidade. Confira a alimentação do HC-SR04 em 5 V, pois ele não funciona direito em 3,3 V.
+
+</details>
+
+---
+
+### Exercício 24: Movimento em 6 e 9 eixos com IMU e magnetômetro
+
+**Objetivo:** ler aceleração e rotação com a unidade de medida inercial ICM-42670-P, e a direção do norte com o magnetômetro HMC5883L.
+
+**Materiais:** sensor ICM-42670-P 🛒 (ideal 5), sensor HMC5883L 🛒 (ideal 5).
+
+**Roteiro:**
+
+1. Ligue os dois sensores ao barramento I2C (GPIO 21 e 22), que tem endereços diferentes.
+2. Leia a aceleração e a rotação do ICM-42670-P.
+3. Calcule o rumo com o HMC5883L, corrigindo a declinação magnética da sua região.
+
+:::note
+Os dois sensores estão com quantidade 0. Confirme os endereços I2C no scanner do exercício 2 do submódulo de Comunicação e IoT quando forem comprados.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include <Adafruit_HMC5883_U.h>
+
+Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  mag.begin();
+}
+
+void loop() {
+  sensors_event_t evento;
+  mag.getEvent(&evento);
+  float rumo = atan2(evento.magnetic.y, evento.magnetic.x) * 180.0 / PI;
+  if (rumo < 0) rumo += 360;
+  Serial.printf("Rumo=%.1f graus\n", rumo);
+  delay(300);
+}
+```
+
+A leitura do ICM-42670-P usa a biblioteca do fabricante, e o rumo do HMC5883L precisa ser compensado pela inclinação da placa. Para isso, use a aceleração do ICM.
+
+</details>
+
+---
+
+## Parte 4: Temperatura, umidade, pressão e ambiente
+
+### Exercício 25: Umidade e temperatura com DHT11 e pressão com BMP280
+
+**Objetivo:** medir temperatura, umidade e pressão atmosférica, e calcular a altitude aproximada.
+
+**Materiais:** sensor DHT11 ✅ (11, ideal 5), sensor BMP280 🛒 (ideal 5), resistor de 4,7KΩ ✅ (68, ideal 30).
+
+**Roteiro:**
+
+1. Ligue o DHT11 ao GPIO 13, e o BMP280 ao barramento I2C (GPIO 21 e 22).
+2. Leia a temperatura e a umidade do DHT11 a cada 2 segundos.
+3. Leia a pressão do BMP280 e calcule a altitude aproximada.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include <DHT.h>
+#include <Adafruit_BMP280.h>
+
+DHT dht(13, DHT11);
+Adafruit_BMP280 bmp;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  dht.begin();
+  bmp.begin(0x76);
+}
+
+void loop() {
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+  float p = bmp.readPressure() / 100.0;          // hPa
+  float altitude = bmp.readAltitude(1013.25);   // m, referência ao nível do mar
+  Serial.printf("T=%.1f C  UR=%.0f%%  P=%.1f hPa  Alt=%.0f m\n", t, h, p, altitude);
+  delay(2000);
+}
+```
+
+O DHT11 tem baixa resolução (1 °C e 1 %). Para medições mais precisas, use o SHT31 do próximo exercício.
+
+</details>
+
+---
+
+### Exercício 26: Umidade precisa com SHT31 e termistor NTC
+
+**Objetivo:** comparar a leitura de temperatura do SHT31 com a de um termistor NTC 10D-9, convertendo a resistência em temperatura pela equação beta.
+
+**Materiais:** sensor SHT31 🛒 (ideal 5), termistor NTC 10D-9 ✅ (7, ideal 10), resistor de 10KΩ ✅ (111, ideal 30).
+
+**Roteiro:**
+
+1. Ligue o SHT31 ao barramento I2C (GPIO 21 e 22).
+2. Monte um divisor com o NTC e o resistor de 10KΩ, e ligue o ponto médio ao GPIO 32.
+3. Calcule a resistência do NTC e a temperatura pela equação beta, e compare com o SHT31.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include <Adafruit_SHT31.h>
+
+Adafruit_SHT31 sht;
+const int NTC = 32;
+const float R_FIXO = 10000.0, R0 = 10000.0, T0 = 298.15, BETA = 3950.0;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  sht.begin(0x44);
+}
+
+void loop() {
+  float v = analogRead(NTC) * 3.3 / 4095.0;
+  float r = R_FIXO * v / (3.3 - v);              // NTC no lado do GND
+  float tNtc = 1.0 / (1.0 / T0 + log(r / R0) / BETA) - 273.15;
+  Serial.printf("SHT31=%.2f C  NTC=%.2f C  UR=%.1f%%\n",
+                sht.readTemperature(), tNtc, sht.readHumidity());
+  delay(1000);
+}
+```
+
+O valor de BETA está no datasheet do NTC. Um valor errado gera um erro sistemático, então confirme o valor do seu lote.
+
+</details>
+
+---
+
+### Exercício 27: Temperatura digital com DS18B20 e o módulo KY-001
+
+**Objetivo:** ler a temperatura por barramento de um fio (1-Wire) com o DS18B20 e o módulo KY-001, que usa o mesmo chip.
+
+**Materiais:** sensor DS18B20 ✅ (1, ideal 5), módulo KY-001 ✅ (1, ideal 0), resistor de 4,7KΩ ✅ (68).
+
+**Roteiro:**
+
+1. Ligue os dois sensores no mesmo barramento de dados (GPIO 13), com um único resistor de pull-up de 4,7KΩ.
+2. Solicite a temperatura a todos os sensores e leia cada endereço.
+3. Compare as leituras e observe a diferença entre sensores de endereço diferentes.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+OneWire barramento(13);
+DallasTemperature sensores(&barramento);
+
+void setup() {
+  Serial.begin(115200);
+  sensores.begin();
+  Serial.printf("Sensores encontrados: %d\n", sensores.getDeviceCount());
+}
+
+void loop() {
+  sensores.requestTemperatures();
+  for (int i = 0; i < sensores.getDeviceCount(); i++) {
+    Serial.printf("Sensor %d: %.2f C\n", i, sensores.getTempCByIndex(i));
+  }
+  delay(1000);
+}
+```
+
+Vários DS18B20 dividem o mesmo fio. Cada um tem um código único de 64 bits, que a biblioteca usa para identificá-los.
+
+</details>
+
+---
+
+### Exercício 28: Ambiente com sensor de temperatura analógico e sensor de chuva
+
+**Objetivo:** ler a temperatura do módulo KY-028 e a presença de chuva no sensor HW-028.
+
+**Materiais:** módulo KY-028 ✅ (1, ideal 0), sensor de chuva HW-028 ✅ (5, ideal 5).
+
+**Roteiro:**
+
+1. Ligue a saída analógica do KY-028 ao GPIO 32, e a do HW-028 ao GPIO 33.
+2. Converta a leitura do KY-028 em temperatura com a equação beta do exercício 26.
+3. Mergulhe a placa do HW-028 em água e observe a queda da leitura.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int KY028 = 32, CHUVA = 33;
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int temp = analogRead(KY028);
+  int chuva = analogRead(CHUVA);
+  bool molhado = chuva < 2000;   // ajuste o limiar com os testes
+  Serial.printf("KY028=%d  HW028=%d  %s\n", temp, chuva, molhado ? "MOLHADO" : "SECO");
+  delay(500);
+}
+```
+
+O KY-028 é um termistor com resistor de referência, e a leitura analógica não é diretamente em graus. Use a equação do exercício 26 para converter.
+
+</details>
+
+---
+
+### Exercício 29: Umidade do solo e nível de água
+
+**Objetivo:** monitorar a umidade do solo com o HL-69 e detectar nível de água com o sensor FD10.
+
+**Materiais:** sensor HL-69 ✅ (7, ideal 5), sensor FD10 ✅ (1, ideal 1), recipiente com terra e água.
+
+**Roteiro:**
+
+1. Ligue a saída analógica do HL-69 ao GPIO 34 e a saída digital do FD10 ao GPIO 27.
+2. Meça o solo seco, o solo úmido e o solo encharcado para definir os limiares.
+3. Acione um LED quando o nível de água passar do limite.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int SOLO = 34, NIVEL = 27, LED = 26;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(NIVEL, INPUT);
+  pinMode(LED, OUTPUT);
+}
+
+void loop() {
+  int umidade = analogRead(SOLO);
+  bool agua = digitalRead(NIVEL) == HIGH;
+  digitalWrite(LED, agua);
+  Serial.printf("Solo=%d  Agua=%d\n", umidade, agua);
+  delay(500);
+}
+```
+
+No HL-69, valores mais baixos indicam solo mais úmido. Sempre calibre com as condições reais do seu projeto, pois a leitura depende do tipo de solo.
+
+</details>
+
+---
+
+### Exercício 30: Gás e alarme sonoro passivo
+
+**Objetivo:** detectar a presença de gás com o sensor MQ e acionar um buzzer passivo com um tom de alerta.
+
+**Materiais:** sensor de gás série MQ ✅ (2, ideal 2), buzzer passivo ✅ (2, ideal 10), resistor de 1KΩ ✅ (199).
+
+**Roteiro:**
+
+1. Ligue a saída analógica do MQ ao GPIO 35, e o buzzer passivo ao GPIO 25 com `ledc`.
+2. Deixe o sensor aquecer por cerca de 24 horas, ou pelo menos alguns minutos, e registre a linha de base.
+3. Toque um tom quando a leitura passar do limite definido.
+
+:::danger
+Gases inflamáveis são perigosos. Este exercício é apenas didático, não substitui detector certificado, e deve ser feito em ambiente ventilado e sem chamas.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int MQ = 35, BUZ = 25;
+const int LIMITE = 1500;   // ajuste com a linha de base
+
+void setup() {
+  Serial.begin(115200);
+  ledcAttach(BUZ, 2000, 8);
+}
+
+void loop() {
+  int leitura = analogRead(MQ);
+  Serial.println(leitura);
+  if (leitura > LIMITE) {
+    ledcWriteTone(BUZ, 2000);
+  } else {
+    ledcWriteTone(BUZ, 0);
+  }
+  delay(300);
+}
+```
+
+O sensor MQ responde a vários gases ao mesmo tempo, e não identifica qual gás está presente. Para isso, é preciso calibração com gases conhecidos.
+
+</details>
+
+---
+
+## Parte 5: Força, som, corrente e condicionamento
+
+### Exercício 31: Pressão e toque com FSR402 e sensor piezo
+
+**Objetivo:** medir força com o sensor de pressão FSR402 e detectar impactos com o sensor piezo elétrico.
+
+**Materiais:** sensor FSR402 🛒 (ideal 5), sensor piezo ✅ (4, ideal 5), resistor de 10KΩ ✅ (111).
+
+**Roteiro:**
+
+1. Monte um divisor com o FSR402 e o resistor de 10KΩ, e ligue o ponto médio ao GPIO 32.
+2. Ligue o piezo ao GPIO 33 com um resistor de 1MΩ em paralelo, para descarregar o sinal.
+3. Aplique força crescente ao FSR402 e observe a leitura. Dê batidas no piezo e observe os picos.
+
+:::note
+O FSR402 está com quantidade 0. Use o exercício como montagem para quando ele for comprado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int FSR = 32, PIEZO = 33;
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int forca = analogRead(FSR);
+  int impacto = analogRead(PIEZO);
+  Serial.printf("Forca=%d  Impacto=%d\n", forca, impacto);
+  delay(20);
+}
+```
+
+O FSR402 muda a resistência com a força, então a leitura cresce com a pressão, mas não de forma linear. O piezo gera tensão apenas durante a variação de força, por isso serve para detectar impactos e não pressão contínua.
+
+</details>
+
+---
+
+### Exercício 32: Célula de carga com HX711
+
+**Objetivo:** medir massa com uma célula de carga de 3 V, ampliada e digitalizada pelo HX711.
+
+**Materiais:** célula de carga 3V ✅ (6, ideal 10), amplificador HX711 ✅ (2, ideal 5), massas conhecidas para calibração.
+
+**Roteiro:**
+
+1. Ligue o HX711 ao GPIO 16 (DT) e GPIO 17 (SCK), e a célula de carga às entradas do HX711.
+2. Faça a tara com a balança vazia e registre o valor.
+3. Coloque uma massa conhecida, calcule o fator de calibração e confira a leitura.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <HX711.h>
+
+const int DT = 16, SCK_PIN = 17;
+HX711 balanca;
+float fator = 1.0;   // defina após a calibração
+
+void setup() {
+  Serial.begin(115200);
+  balanca.begin(DT, SCK_PIN);
+  balanca.set_scale(fator);
+  balanca.tare();
+}
+
+void loop() {
+  Serial.printf("Massa=%.2f\n", balanca.get_units(10));
+  delay(500);
+}
+```
+
+Para calibrar, divida a leitura bruta de uma massa conhecida pelo valor dessa massa, e use o resultado como fator. A célula de carga é sensível a vibração e temperatura, por isso faça a tara em condições estáveis.
+
+</details>
+
+---
+
+### Exercício 33: Som com microfone analógico e sensor digital KY-037
+
+**Objetivo:** medir o nível de som com um microfone de eletreto e detectar picos com o módulo KY-037.
+
+**Materiais:** microfone de eletreto ✅ (7, ideal 5), sensor de som KY-037 ✅ (3, ideal 3).
+
+**Roteiro:**
+
+1. Ligue a saída do microfone ao GPIO 32, e a saída digital do KY-037 ao GPIO 27.
+2. Meça o pico a pico do microfone em uma janela de 50 ms.
+3. Bata palmas perto dos dois sensores e observe a resposta de cada um.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int MIC = 32, KY037 = 27;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(KY037, INPUT);
+}
+
+void loop() {
+  int minimo = 4095, maximo = 0;
+  unsigned long inicio = millis();
+  while (millis() - inicio < 50) {
+    int v = analogRead(MIC);
+    if (v < minimo) minimo = v;
+    if (v > maximo) maximo = v;
+  }
+  Serial.printf("Pico a pico=%d  KY-037=%d\n", maximo - minimo, digitalRead(KY037));
+  delay(100);
+}
+```
+
+O microfone analógico precisa de polarização, por isso confira a saída do módulo com o multímetro antes de ligar ao ESP32. A janela de 50 ms mede o nível médio do som, e não palavras.
+
+</details>
+
+---
+
+### Exercício 34: Sensor de som com gravação e reprodução de áudio
+
+**Objetivo:** usar o módulo ISD1820 para gravar e reproduzir uma mensagem curta, disparada pelo sensor de som KY-030.
+
+**Materiais:** módulo gravador ISD1820 ✅ (1, ideal 0), sensor de som KY-030 ✅ (1, ideal 0), alto-falante ou fone de ouvido, microfone do ISD1820.
+
+**Roteiro:**
+
+1. Ligue o pino REC do ISD1820 ao GPIO 25, o PLAYE ao GPIO 26, e a saída digital do KY-030 ao GPIO 27.
+2. Grave uma mensagem curta pulsando REC em LOW por 1 segundo.
+3. Quando o KY-030 detectar som, reproduza a mensagem pulsando PLAYE.
+
+:::warning
+O ISD1820 é um módulo de gravação, e o ESP32 apenas dispara os pinos. Respeite a tensão de alimentação do módulo, geralmente 3,3 V a 5 V, e confira o datasheet.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int REC = 25, PLAYE = 26, SOM = 27;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(REC, OUTPUT);
+  pinMode(PLAYE, OUTPUT);
+  pinMode(SOM, INPUT);
+  digitalWrite(REC, HIGH);
+  digitalWrite(PLAYE, HIGH);
+}
+
+void loop() {
+  if (digitalRead(SOM) == LOW) {        // KY-030 ativo em LOW
+    digitalWrite(PLAYE, LOW);
+    delay(200);
+    digitalWrite(PLAYE, HIGH);
+    delay(2000);                        // evita repetir durante a mensagem
+  }
+}
+```
+
+A função de gravação depende do pulso no pino REC, por isso não use este código para gravar sem conferir a sequência no datasheet.
+
+</details>
+
+---
+
+### Exercício 35: Corrente de motor com sensor de 50 A
+
+**Objetivo:** medir a corrente consumida por um motor DC com o sensor HWCT004 de 50 A.
+
+**Materiais:** sensor HWCT004 🛒 (ideal 5), motor DC 5V ✅ (6, ideal 5), fonte 12V 5A ✅ (2), transistor TIP41 ✅ (3, ideal 5) para acionamento.
+
+**Roteiro:**
+
+1. Ligue a saída analógica do HWCT004 ao GPIO 35 com divisor se necessário.
+2. Acione o motor pelo TIP41 no GPIO 25, com diodo de roda livre 1N4007 ✅ (41).
+3. Calcule a corrente a partir da tensão, pela sensibilidade do datasheet, e registre a partida do motor.
+
+:::danger
+A corrente de partida do motor pode passar do limite do sensor. Não ultrapasse 50 A e mantenha a fiação de potência com bitola adequada.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int SENSOR = 35, BASE = 25;
+const float SENSIBILIDADE = 0.066;   // V/A, confira no datasheet
+const float V_ZERO = 2.5;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(BASE, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(BASE, HIGH);            // liga o motor
+  delay(2000);
+  float v = analogRead(SENSOR) * 3.3 / 4095.0;
+  float corrente = (v - V_ZERO) / SENSIBILIDADE;
+  Serial.printf("Corrente=%.2f A\n", corrente);
+  digitalWrite(BASE, LOW);
+  delay(2000);
+}
+```
+
+Este código usa o sensor com alimentação e referência em 5 V, então o divisor do sinal é necessário. Confira sempre o ponto zero do sensor antes de medir.
+
+</details>
+
+---
+
+### Exercício 36: Corrente e tensão com ACS712 e INA219
+
+**Objetivo:** medir corrente com o ACS712 (analógico) e com o INA219 (digital, por I2C), e comparar as duas medidas.
+
+**Materiais:** sensor ACS712 ✅ (1, ideal 0), sensor INA219 🛒 (ideal 5), carga de 1 a 2 W, como um LED com resistor.
+
+**Roteiro:**
+
+1. Ligue a saída do ACS712 ao GPIO 32, e o INA219 ao barramento I2C (GPIO 21 e 22).
+2. Meça a corrente com os dois sensores na mesma carga.
+3. Registre a diferença e calcule o erro de cada um.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include <Adafruit_INA219.h>
+
+Adafruit_INA219 ina;
+const int ACS = 32;
+const float SENS_ACS = 0.185;   // V/A para o modelo de 5 A
+float vZero = 2.5;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  ina.begin();
+  delay(500);
+  vZero = analogRead(ACS) * 3.3 / 4095.0;   // calibra com carga desligada
+}
+
+void loop() {
+  float vAcs = analogRead(ACS) * 3.3 / 4095.0;
+  float iAcs = (vAcs - vZero) / SENS_ACS;
+  Serial.printf("ACS=%.3f A  INA=%.3f A  V=%.2f V\n",
+                iAcs, ina.getCurrent_mA() / 1000.0, ina.getBusVoltage_V());
+  delay(500);
+}
+```
+
+O ACS712 precisa de divisor de tensão se alimentado em 5 V, porque sua saída passa de 3,3 V. O INA219 dá tensão e corrente em medidas digitais e costuma ser mais preciso.
+
+</details>
+
+---
+
+### Exercício 37: Comparador com LM358 e LDR
+
+**Objetivo:** montar um comparador com o amplificador LM358 para acionar um LED quando a luz cair abaixo de um limite, sem usar o ESP32 para comparar.
+
+**Materiais:** amplificador LM358 ✅ (3, ideal 5), LDR grande ✅ (22), resistor de 10KΩ ✅ (111), potenciômetro B10KΩ ✅ (9) para ajustar o limiar.
+
+**Roteiro:**
+
+1. Monte um divisor com o LDR e o resistor de 10KΩ, e ligue o ponto médio à entrada não inversora do LM358.
+2. Ligue o potenciômetro à entrada inversora como referência de limiar.
+3. Ligue a saída do LM358 ao GPIO 27 e acenda um LED quando a saída for alta.
+
+:::note
+O LM358 é alimentado em 5 V, e sua saída pode passar de 3,3 V. Use o conversor de nível lógico do exercício 23 antes do GPIO.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int SAIDA_COMP = 27, LED = 26;
+
+void setup() {
+  pinMode(SAIDA_COMP, INPUT);
+  pinMode(LED, OUTPUT);
+}
+
+void loop() {
+  bool escuro = digitalRead(SAIDA_COMP) == HIGH;
+  digitalWrite(LED, escuro);
+}
+```
+
+O comparador faz a decisão em hardware, sem depender do processador. Essa é a base para sistemas de alarme sem atraso de software.
+
+</details>
+
+---
+
+### Exercício 38: Proteção de alimentação com fusível e conversor DC-DC
+
+**Objetivo:** proteger um circuito com fusível 5x20 e reduzir a tensão de uma bateria com o conversor DC-DC.
+
+**Materiais:** fusível cilíndrico 5x20mm ✅ (6), conversor DC-DC ✅ (5, ideal 5), fonte 12V 5A ✅ (2), porta-fusível.
+
+**Roteiro:**
+
+1. Coloque o fusível na linha positiva da fonte de 12 V, antes do conversor.
+2. Ajuste o conversor para 5 V com o multímetro, sem carga.
+3. Conecte uma carga e confira que o fusível protege o circuito em caso de curto.
+
+:::danger
+Nunca conecte a fonte de 12 V sem fusível. Um curto sem proteção pode gerar fogo. Desligue a alimentação antes de mexer no circuito.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de potência.
+
+Passos de verificação:
+
+- Meça a tensão de saída do conversor antes de ligar o ESP32.
+- Use um fusível de corrente próxima da carga, mas acima dela.
+- Ligue o ESP32 somente depois que a tensão estiver correta.
+
+O fusível é um elemento de sacrifício: quando ele queima, a causa precisa ser encontrada antes de trocá-lo.
+
+</details>
+
+---
+
+## Parte 6: Energia e alimentação
+
+### Exercício 39: Carregamento solar de bateria de lítio
+
+**Objetivo:** carregar uma bateria de 3,7 V com o painel solar de 6 V e o módulo carregador TP4056, e monitorar a tensão da bateria.
+
+**Materiais:** painel solar 6V 180mA ✅ (4, ideal 5), módulo carregador TP4056 🛒 (ideal 10), bateria 3,7V ✅ (1).
+
+**Roteiro:**
+
+1. Ligue o painel à entrada IN do TP4056, e a bateria à saída BAT. Confira a polaridade antes.
+2. Observe o LED de carga do TP4056 com o painel exposto ao sol.
+3. Meça a tensão da bateria com um divisor de 100KΩ e 100KΩ ligado ao GPIO 32.
+
+:::warning
+Baterias de lítio podem pegar fogo se carregadas ou descarregadas de forma errada. Use somente o TP4056 com proteção, nunca carregue baterias danificadas, e não deixe a bateria sem supervisão durante a carga.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BATERIA = 32;
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  float v = analogRead(BATERIA) * 3.3 / 4095.0;
+  float tensaoBateria = v * 2.0;   // divisor 1:1 faz a tensão cair pela metade
+  Serial.printf("Bateria=%.2f V\n", tensaoBateria);
+  delay(1000);
+}
+```
+
+Uma bateria de lítio totalmente carregada fica perto de 4,2 V e, descarregada, perto de 3,0 V. Não deixe a tensão cair abaixo de 3,0 V.
+
+</details>
+
+---
+
+### Exercício 40: Elevação de tensão com MT3608
+
+**Objetivo:** elevar a tensão de uma bateria de 3,7 V para 5 V com o conversor step-up MT3608, e alimentar um ESP32 com ela.
+
+**Materiais:** conversor step-up MT3608 ✅ (2, ideal 2), bateria 3,7V ✅ (1), multímetro.
+
+**Roteiro:**
+
+1. Ligue a bateria à entrada do MT3608, e ajuste o potenciômetro do módulo para 5 V na saída, sem carga.
+2. Confira a tensão com o multímetro antes de conectar o ESP32.
+3. Alimente o ESP32 pela entrada 5 V e observe a autonomia com a bateria.
+
+:::danger
+O MT3608 pode gerar tensão alta se o potenciômetro for girado sem medir. Ajuste sempre com multímetro antes de ligar cargas.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de potência.
+
+Passos de verificação:
+
+- Saída medida sem carga: 5,0 V.
+- Saída com ESP32 conectado: confira se a tensão não cai abaixo de 4,8 V.
+- Bateria de lítio: não deixe descarregar abaixo de 3,0 V.
+
+Um step-up de baixo custo tem eficiência menor que um regulador de boa qualidade, então a autonomia prevista é menor que a teórica.
+
+</details>
+
+---
+
+### Exercício 41: Regulação com bateria de 9 V e LM7805
+
+**Objetivo:** alimentar um circuito de 5 V a partir de uma bateria de 9 V com o regulador LM7805, e medir a dissipação de calor.
+
+**Materiais:** bateria 9V ✅ (12, ideal 5), conector de bateria 9V ✅ (7, ideal 10), regulador LM7805 ✅ (14, ideal 10), capacitores de 100nF ✅ (54) e 100uF ✅ (29).
+
+**Roteiro:**
+
+1. Ligue a bateria ao conector e ao LM7805: entrada, GND e saída.
+2. Coloque capacitores de 100nF na entrada e de 100uF na saída.
+3. Meça a tensão de saída com carga e observe o aquecimento do regulador.
+
+:::warning
+O LM7805 dissipa a diferença de tensão como calor. Com 9 V de entrada e 100 mA de carga, ele aquece muito. Use dissipador ou escolha um conversor DC-DC para cargas maiores.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de potência.
+
+Cálculo da potência dissipada:
+
+- Diferença de tensão: 9 V − 5 V = 4 V.
+- Com 100 mA de carga, a potência é 4 V × 0,1 A = 0,4 W.
+- Com 500 mA, a potência sobe para 2 W, o que exige dissipador.
+
+Um regulador linear é simples, mas ineficiente. Compare a temperatura com o conversor DC-DC do exercício 38.
+
+</details>
+
+---
+
+### Exercício 42: Pilhas AA e AAA com porta-pilhas
+
+**Objetivo:** alimentar um ESP32 com pilhas AA em série e medir a tensão de cada conjunto.
+
+**Materiais:** pilhas AA ✅ (17, ideal 12), pilhas AAA ✅ (8, ideal 8), porta-pilhas, conectores de borne 2 pinos ✅ (5, ideal 5).
+
+**Roteiro:**
+
+1. Monte quatro pilhas AA em série e conecte ao borne. Meça a tensão com o multímetro.
+2. Monte três pilhas AAA em série e compare a tensão e a capacidade.
+3. Alimente o ESP32 pelo pino 5 V (ou 3,3 V com regulador) e observe a duração.
+
+:::note
+Pilhas alcalinas caem de tensão conforme se descarregam. O ESP32 precisa de pelo menos 3,0 V para funcionar de forma estável durante o WiFi.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de energia.
+
+Passos de verificação:
+
+- Quatro pilhas AA novas: cerca de 6 V.
+- Três AAA novas: cerca de 4,5 V, o que exige regulação para 5 V ou 3,3 V.
+- Não misture pilhas novas com usadas, pois a corrente desigual pode aquecer o conjunto.
+
+Para medir a autonomia, use a corrente média medida com o INA219 do exercício 36.
+
+</details>
+
+---
+
+## Parte 7: Identificação e segurança
+
+### Exercício 43: Cartão RFID com RC522 e servo de trava
+
+**Objetivo:** ler o código de um cartão RFID com o leitor RC522 e acionar um servo que faz o papel de trava.
+
+**Materiais:** leitor RFID RC522 ✅ (2, ideal 5), cartão e tag RFID, servo motor ✅ (10, ideal 10), biblioteca MFRC522.
+
+**Roteiro:**
+
+1. Ligue o RC522 ao barramento SPI: SCK 18, MISO 19, MOSI 23, SDA (SS) 5, RST 14. Alimente em 3,3 V.
+2. Leia o UID de um cartão e imprima no monitor serial.
+3. Se o UID estiver na lista autorizada, gire o servo de 0° a 90°, e volte após 3 segundos.
+
+:::danger
+O RC522 funciona somente em 3,3 V. Ligá-lo em 5 V pode danificar o módulo e o ESP32.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <SPI.h>
+#include <MFRC522.h>
+#include <ESP32Servo.h>
+
+MFRC522 rfid(5, 14);
+Servo trava;
+const int SERVO_PIN = 25;
+const char *AUTORIZADO = "A1B2C3D4";   // UID do seu cartão, em hexadecimal
+
+void setup() {
+  Serial.begin(115200);
+  SPI.begin();
+  rfid.PCD_Init();
+  trava.attach(SERVO_PIN);
+  trava.write(0);
+}
+
+void loop() {
+  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) return;
+  String uid = "";
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    if (rfid.uid.uidByte[i] < 0x10) uid += "0";
+    uid += String(rfid.uid.uidByte[i], HEX);
+  }
+  uid.toUpperCase();
+  Serial.println("UID: " + uid);
+  if (uid == AUTORIZADO) {
+    trava.write(90);
+    delay(3000);
+    trava.write(0);
+  }
+  rfid.PICC_HaltA();
+}
+```
+
+Compare o UID com uma lista, e não com um único valor, quando houver mais de um cartão autorizado. Um UID pode ser copiado, então este sistema não é seguro para controle de acesso real.
+
+</details>
+
+---
+
+### Exercício 44: Leitor de digital AS608
+
+**Objetivo:** cadastrar e reconhecer uma digital com o sensor AS608 pela porta serial.
+
+**Materiais:** sensor de digital AS608 ✅ (1, ideal 3), biblioteca Adafruit_Fingerprint, LED verde ✅ (40).
+
+**Roteiro:**
+
+1. Ligue o AS608 à Serial2: RX do sensor no TX2 (GPIO 17) e TX do sensor no RX2 (GPIO 16). Alimente em 3,3 V.
+2. Cadastre uma digital pelo número de posição (ID 1).
+3. Coloque o dedo e confirme se o sensor identifica a digital cadastrada.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Adafruit_Fingerprint.h>
+
+HardwareSerial &porta = Serial2;
+Adafruit_Fingerprint leitor(&porta);
+const int LED = 14;
+
+void setup() {
+  Serial.begin(115200);
+  porta.begin(57600, SERIAL_8N1, 16, 17);
+  pinMode(LED, OUTPUT);
+  if (!leitor.verifyPassword()) {
+    Serial.println("Sensor nao encontrado");
+    while (1);
+  }
+}
+
+void loop() {
+  if (leitor.getImage() == FINGERPRINT_OK &&
+      leitor.image2Tz() == FINGERPRINT_OK &&
+      leitor.fingerFastSearch() == FINGERPRINT_OK) {
+    Serial.printf("Digital reconhecida ID=%d\n", leitor.fingerID);
+    digitalWrite(LED, HIGH);
+    delay(1000);
+    digitalWrite(LED, LOW);
+  }
+  delay(200);
+}
+```
+
+O AS608 guarda as digitais na memória interna, e o código de identificação é a posição da digital. Para cadastrar, use as funções `createModel` e `storeModel` da mesma biblioteca.
+
+</details>
+
+---
+
+## Parte 8: Displays
+
+### Exercício 45: Display TFT ST7735 e touch TFT de 2,4 polegadas
+
+**Objetivo:** usar dois displays coloridos, um pequeno e um com touch, para mostrar informações diferentes.
+
+**Materiais:** display ST7735 1,8" ✅ (1, ideal 3), display TFT 2,4" touch ✅ (1, ideal 3).
+
+**Roteiro:**
+
+1. Ligue o ST7735 ao barramento SPI com CS no GPIO 5, DC no GPIO 4 e RST no GPIO 16. Ligue o TFT de 2,4" com CS no GPIO 13, DC no GPIO 27 e RST no GPIO 14.
+2. Mostre o nome do projeto no ST7735 e uma barra colorida no TFT.
+3. Toque na tela do TFT e exiba as coordenadas do toque.
+
+:::note
+Os dois displays compartilham SCK, MOSI e MISO. Só o CS muda. Com os CS separados, o barramento funciona sem conflito.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
+#include <Adafruit_ILI9341.h>
+
+Adafruit_ST7735 pequeno(5, 4, 16);
+Adafruit_ILI9341 grande(13, 27, 14);
+
+void setup() {
+  pequeno.initR(INITR_BLACKTAB);
+  grande.begin();
+  pequeno.fillScreen(ST77XX_BLUE);
+  pequeno.setCursor(10, 40);
+  pequeno.setTextColor(ST77XX_WHITE);
+  pequeno.print("PETee");
+  grande.fillScreen(ILI9341_BLACK);
+  grande.fillRect(0, 0, 320, 40, ILI9341_GREEN);
+}
+
+void loop() {}
+```
+
+O touch do TFT de 2,4" usa outro chip (XPT2046) e pinos próprios, que não estão no código acima. Consulte a documentação da biblioteca de touch antes de adicionar essa função.
+
+</details>
+
+---
+
+### Exercício 46: OLED SSD1306 e display GC9A01 circular
+
+**Objetivo:** mostrar informações em um OLED monocromático e em um display circular colorido.
+
+**Materiais:** display OLED SSD1306 ✅ (1, ideal 5), display circular GC9A01 🛒 (ideal 3).
+
+**Roteiro:**
+
+1. Ligue o SSD1306 ao barramento I2C (GPIO 21 e 22).
+2. Mostre a temperatura e a umidade lidas do DHT11 do exercício 25.
+3. Quando o GC9A01 for comprado, use o mesmo texto no display circular.
+
+:::note
+O GC9A01 está com quantidade 0. Este exercício mostra o que fazer quando ele estiver disponível, e o código do GC9A01 depende da biblioteca escolhida.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+
+void setup() {
+  Wire.begin(21, 22);
+  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+}
+
+void loop() {
+  oled.clearDisplay();
+  oled.setTextSize(2);
+  oled.setTextColor(SSD1306_WHITE);
+  oled.setCursor(0, 0);
+  oled.println("T: 25 C");
+  oled.println("U: 60 %");
+  oled.display();
+  delay(1000);
+}
+```
+
+O OLED é monocromático e não tem backlight, por isso o contraste depende do ângulo. O display circular precisa de um recorte de imagem para ficar bem centrado.
+
+</details>
+
+---
+
+### Exercício 47: Displays LCD HC 1624 e 1602
+
+**Objetivo:** mostrar texto em dois LCDs de caracteres, com o controle paralelo de 4 bits.
+
+**Materiais:** LCD HC 1624-B-LWH ✅ (3, ideal 3), LCD 1602 ✅ (3, ideal 5), potenciômetro B10KΩ ✅ (9) para contraste.
+
+**Roteiro:**
+
+1. Ligue o primeiro LCD aos pinos RS 21, E 22, D4 16, D5 17, D6 18, D7 19. Ajuste o contraste pelo potenciômetro.
+2. Mostre uma linha fixa e uma linha que muda a cada segundo.
+3. Repita o procedimento no segundo LCD, usando outro conjunto de pinos.
+
+:::note
+Como o LCD usa muitos pinos, considere o registrador de deslocamento 74HC595 do submódulo de GPIOs Digitais para economizar pinos.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(21, 22, 16, 17, 18, 19);   // RS, E, D4, D5, D6, D7
+
+void setup() {
+  lcd.begin(16, 2);
+  lcd.print("Laboratorio");
+}
+
+void loop() {
+  lcd.setCursor(0, 1);
+  lcd.print(millis() / 1000);
+  lcd.print(" s     ");
+  delay(1000);
+}
+```
+
+O HC 1624 e o 1602 usam o mesmo controlador, o HD44780, e o mesmo código funciona nos dois com a mesma pinagem.
+
+</details>
+
+---
+
+### Exercício 48: Display Nextion e papel eletrônico (E-Paper)
+
+**Objetivo:** controlar um display Nextion por comandos serial, e exibir texto em um E-Paper de baixo consumo.
+
+**Materiais:** display IHM Nextion 3,5" 🛒 (ideal 1), módulo E-Paper 🛒 (ideal 3).
+
+**Roteiro:**
+
+1. Ligue o Nextion à Serial2 (GPIO 16 e 17), com a alimentação e o nível lógico de acordo com o datasheet.
+2. Envie o comando `t0.txt="Ola"` seguido de três bytes `0xFF`.
+3. Para o E-Paper, use a biblioteca do fabricante e mostre a mesma mensagem.
+
+:::note
+Os dois módulos estão com quantidade 0. Use este exercício como roteiro de montagem para quando forem comprados.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+void enviarNextion(const String &comando) {
+  Serial2.print(comando);
+  Serial2.write(0xFF);
+  Serial2.write(0xFF);
+  Serial2.write(0xFF);
+}
+
+void setup() {
+  Serial.begin(115200);
+  Serial2.begin(9600, SERIAL_8N1, 16, 17);
+  delay(500);
+  enviarNextion("t0.txt=\"Ola\"");
+}
+
+void loop() {}
+```
+
+Os comandos do Nextion terminam sempre com três bytes 0xFF. Sem eles, o display ignora o comando. O E-Paper usa outra biblioteca, e o código depende do modelo exato do painel.
+
+</details>
+
+---
+
+## Parte 9: Câmeras e módulos de visão
+
+### Exercício 49: Câmera de vídeo digital e minicâmera analógica
+
+**Objetivo:** comparar a captura de uma câmera digital por barramento com a de uma minicâmera analógica, que precisa de um conversor de vídeo.
+
+**Materiais:** módulo de câmera de vídeo ✅ (3, ideal 3), minicâmera analógica ✅ (2, ideal 2), módulo de captura de vídeo (se disponível).
+
+**Roteiro:**
+
+1. Identifique o tipo de saída de cada câmera: digital, por barramento, ou analógica (vídeo composto).
+2. Use a câmera digital com o exemplo de captura da biblioteca do fabricante, e confira a resolução.
+3. Explique por que a minicâmera analógica não pode ser lida diretamente pelo ESP32.
+
+:::note
+Uma saída de vídeo analógica tem sinal em tensão contínua com frequência alta. O ESP32 não tem entrada para isso, então é preciso um conversor de vídeo ou um módulo de captura.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois trata da escolha do tipo de câmera.
+
+Pontos a registrar:
+
+- Câmeras digitais por barramento se conectam por I2C, SPI ou paralelo, e entregam quadros em formato digital.
+- Minicâmeras analógicas entregam vídeo composto, que precisa de digitalização antes do processamento.
+- Para o streaming com a ESP32 CAM, veja o exercício 14 do submódulo de Comunicação e IoT.
+
+</details>
+
+---
+
+### Exercício 50: Visão computacional com o módulo CMUcam4
+
+**Objetivo:** usar a placa de expansão CMUcam4 para detectar objetos coloridos e enviar as coordenadas ao ESP32 pela serial.
+
+**Materiais:** placa de expansão CMUcam4 ✅ (5, ideal 0), jumpers, objeto de cor sólida para teste.
+
+**Roteiro:**
+
+1. Ligue a porta serial do CMUcam4 ao ESP32 (TX do CMUcam4 no RX2, GPIO 16, e RX no TX2, GPIO 17). Confira a tensão de lógica.
+2. Envie o comando de rastreamento de cor pela serial, e leia a resposta.
+3. Imprima a posição do objeto no monitor serial.
+
+:::warning
+A CMUcam4 usa protocolo próprio. Confira o manual do fabricante para o formato dos comandos, e o nível de tensão de cada pino antes de ligar.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+void setup() {
+  Serial.begin(115200);
+  Serial2.begin(115200, SERIAL_8N1, 16, 17);
+  delay(1000);
+  Serial2.println("TC");          // comando de rastreamento de cor (confira no manual)
+}
+
+void loop() {
+  while (Serial2.available()) {
+    Serial.write(Serial2.read());
+  }
+}
+```
+
+A resposta da CMUcam4 vem como texto com as coordenadas do objeto rastreado. Faça o tratamento com `String` ou `sscanf`, conforme o formato do manual.
+
+</details>
+
+---
+
+## Parte 10: Atuadores
+
+### Exercício 51: Ponte H L298N com motor DC
+
+**Objetivo:** controlar a direção e a velocidade de um motor DC 5 V com a ponte H L298N, e usar o motor de tensão desconhecida como comparação.
+
+**Materiais:** ponte H L298N 🛒 (ideal 5), motor DC 5V ✅ (6, ideal 5), motor DC de tensão desconhecida ✅ (7), fonte 12V 5A ✅ (2).
+
+**Roteiro:**
+
+1. Ligue IN1 ao GPIO 25, IN2 ao GPIO 26 e ENA (PWM) ao GPIO 27.
+2. Gire o motor nos dois sentidos com PWM de 50%.
+3. Repita com o motor de tensão desconhecida, e meça a tensão de funcionamento com o multímetro antes de ligar.
+
+:::note
+A L298N está com quantidade 0. O exercício vale como montagem para quando ela for comprada. Consulte também os exercícios de H-bridge do submódulo de Sinais e PWM.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int IN1 = 25, IN2 = 26, ENA = 27;
+
+void setup() {
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  ledcAttach(ENA, 1000, 8);
+}
+
+void girar(bool horario, int velocidade) {
+  digitalWrite(IN1, horario);
+  digitalWrite(IN2, !horario);
+  ledcWrite(ENA, velocidade);
+}
+
+void loop() {
+  girar(true, 128);    // horário, cerca de 50%
+  delay(2000);
+  girar(false, 128);   // anti-horário
+  delay(2000);
+  girar(true, 0);      // parado
+  delay(1000);
+}
+```
+
+A L298N perde cerca de 2 V na ponte. Por isso, um motor de 5 V precisa de uma alimentação de motor um pouco maior, como a fonte de 12 V.
+
+</details>
+
+---
+
+### Exercício 52: Motores de passo com o driver
+
+**Objetivo:** girar um motor de passo de 5 V com a sequência de bobinas, e comparar com o motor de passo do tipo CNC.
+
+**Materiais:** motor de passo 5V ✅ (5, ideal 5), motor de passo CNC ✅ (2, ideal 0), driver L298N 🛒 (ideal 5), fonte 12V 5A ✅ (2).
+
+**Roteiro:**
+
+1. Ligue as quatro bobinas do motor de passo 5V às saídas do driver, nos pinos 25, 26, 27 e 14.
+2. Gire o motor com a sequência de passo completo por 200 passos.
+3. Compare a força e a velocidade máxima com o motor CNC, sem trocar o código.
+
+:::note
+O motor CNC geralmente precisa de um driver de passo dedicado, como o A4988. Se o driver for diferente, use este exercício apenas como referência.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BOB[4] = {25, 26, 27, 14};
+const int SEQ[4][4] = {
+  {1, 0, 1, 0},
+  {0, 1, 1, 0},
+  {0, 1, 0, 1},
+  {1, 0, 0, 1}
+};
+
+void passo(int i) {
+  for (int b = 0; b < 4; b++) digitalWrite(BOB[b], SEQ[i][b]);
+}
+
+void setup() {
+  for (int b = 0; b < 4; b++) pinMode(BOB[b], OUTPUT);
+}
+
+void loop() {
+  for (int i = 0; i < 200; i++) {
+    passo(i % 4);
+    delay(5);
+  }
+  delay(1000);
+}
+```
+
+Os motores de passo ganham precisão porque cada pulso gira um ângulo fixo. Se a sequência estiver errada, o motor treme sem girar, e a ordem das bobinas precisa ser trocada.
+
+</details>
+
+---
+
+### Exercício 53: Bomba de água com relé
+
+**Objetivo:** acionar uma bomba de água de 12 V com um relé de 5 V, controlado pelo ESP32, e medir o consumo.
+
+**Materiais:** bomba de água ✅ (2, ideal 0), relé 5V ✅ (5, ideal 4,5), transistor BC546 ✅ (9, ideal 20), diodo 1N4007 ✅ (41), fonte 12V 5A ✅ (2).
+
+**Roteiro:**
+
+1. Ligue o GPIO 25 à base do BC546 por um resistor de 1KΩ, e o coletor à bobina do relé.
+2. Coloque o diodo 1N4007 em paralelo com a bobina, no sentido correto.
+3. Ligue a bomba aos contatos do relé e acione-a por 5 segundos a cada 30 segundos.
+
+:::danger
+A bomba é uma carga de 12 V e a água pode causar curto. Mantenha a fiação seca, use fusível na linha de 12 V, e nunca deixe a bomba funcionar sem água.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BASE = 25;
+
+void setup() {
+  pinMode(BASE, OUTPUT);
+  digitalWrite(BASE, LOW);
+}
+
+void loop() {
+  digitalWrite(BASE, HIGH);   // bomba ligada
+  delay(5000);
+  digitalWrite(BASE, LOW);    // bomba desligada
+  delay(25000);
+}
+```
+
+O diodo protege o transistor contra o pico de tensão gerado pela bobina ao desligar. Sem ele, o BC546 pode queimar.
+
+</details>
+
+---
+
+### Exercício 54: Relé de estado sólido e relé de 12 V
+
+**Objetivo:** comparar um relé mecânico de 12 V com um relé de estado sólido SSR-25DA, ambos acionados pelo ESP32.
+
+**Materiais:** relé 12V ✅ (5, ideal 4,5), relé de estado sólido SSR-25DA 🛒 (ideal 5), lâmpada ou carga de teste, transistor BC546 ✅ (9).
+
+**Roteiro:**
+
+1. Acione o relé de 12 V pelo transistor, como no exercício 53, com a bobina alimentada em 12 V.
+2. Ligue o SSR-25DA diretamente ao GPIO 26 por um resistor de 330Ω.
+3. Alterne os dois e ouça o clique do relé mecânico. Compare a ausência de ruído do SSR.
+
+:::warning
+O lado de carga do SSR-25DA está em rede elétrica, quando usado com cargas de 110 V ou 220 V. Não mexa nessa parte com a energia ligada. Use este exercício com cargas de baixa tensão.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int RELE_MEC = 25, SSR = 26;
+
+void setup() {
+  pinMode(RELE_MEC, OUTPUT);
+  pinMode(SSR, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(RELE_MEC, HIGH);
+  digitalWrite(SSR, LOW);     // SSR ativo em LOW, confira o modelo
+  delay(2000);
+  digitalWrite(RELE_MEC, LOW);
+  digitalWrite(SSR, HIGH);
+  delay(2000);
+}
+```
+
+O relé de estado sólido não tem partes móveis, e por isso dura mais em ciclos frequentes. Ele também gera calor e precisa de dissipador em cargas maiores.
+
+</details>
+
+---
+
+### Exercício 55: Chaves, dip switches e bornes como entradas e conexões
+
+**Objetivo:** ler a configuração de um dip switch de 8 vias e uma chave de alavanca, e organizar as conexões com bornes.
+
+**Materiais:** chave alavanca 🛒 (ideal 3), dip switch 8 vias 🛒 (ideal 5), borne 3 pinos ✅ (3, ideal 10).
+
+**Roteiro:**
+
+1. Ligue as 8 vias do dip switch aos GPIO 13, 14, 16, 17, 18, 19, 21 e 22, com pull-up interno.
+2. Leia a configuração em binário e imprima o valor.
+3. Ligue a chave de alavanca e confira o estado com um LED. Use o borne para organizar a fiação.
+
+:::note
+Os itens 🛒 não estão no laboratório. Este exercício pode ser feito com a chave deslizante ✅ (6, ideal 10) da maleta, que tem o mesmo princípio.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int VIAS[8] = {13, 14, 16, 17, 18, 19, 21, 22};
+
+void setup() {
+  Serial.begin(115200);
+  for (int i = 0; i < 8; i++) pinMode(VIAS[i], INPUT_PULLUP);
+}
+
+void loop() {
+  int valor = 0;
+  for (int i = 0; i < 8; i++) {
+    if (digitalRead(VIAS[i]) == LOW) valor |= (1 << i);   // via ligada = bit 1
+  }
+  Serial.printf("Configuracao: %d (0x%02X)\n", valor, valor);
+  delay(500);
+}
+```
+
+O dip switch é uma forma barata de configurar o comportamento de um projeto sem recompilar. Use-o para escolher modos de operação.
+
+</details>
+
+---
+
+## Parte 11: C.Is e transistores que ainda não tinham exercício
+
+Esta parte cobre os circuitos integrados e transistores do inventário que não apareciam nos outros submódulos. Os exercícios usam o ESP32 apenas como fonte de sinal ou leitor, e a lógica principal fica nos componentes.
+
+### Exercício 56: Seguidor de tensão e filtro com LM324 e TL084
+
+**Objetivo:** montar um seguidor de tensão e um filtro passa-baixa com amplificadores operacionais de quatro e de duas entradas.
+
+**Materiais:** amplificador LM324 ✅ (15, ideal 10), amplificador TL084 ✅ (2, ideal 5), resistores de 10KΩ ✅ (111) e 1KΩ ✅ (199), capacitor de 100nF ✅ (54).
+
+**Roteiro:**
+
+1. No LM324, monte um seguidor de tensão: saída ligada à entrada inversora, e entrada não inversora no potenciômetro.
+2. No TL084, monte um filtro RC passa-baixa com resistor de 10KΩ e capacitor de 100nF.
+3. Aplique um sinal de 1 Hz e de 100 Hz, e meça a atenuação na saída.
+
+:::note
+Os amplificadores são alimentados em 5 V ou 12 V, e a saída não chega ao trilho de alimentação. Para ler a saída com o ESP32, use divisor de tensão.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem analógica.
+
+Cálculos de referência:
+
+- Frequência de corte do filtro RC: f = 1 / (2π · R · C). Com 10KΩ e 100nF, f ≈ 159 Hz.
+- O seguidor de tensão tem ganho de 1, e serve para isolar um estágio do outro.
+- Confira a saída com o ESP32 pelo pino analógico, depois de um divisor se necessário.
+
+</details>
+
+---
+
+### Exercício 57: Somador e inversor com UA741 e MC1458
+
+**Objetivo:** montar um amplificador inversor e um somador de dois sinais com os operacionais UA741 e MC1458.
+
+**Materiais:** amplificador UA741 ✅ (18, ideal 5), amplificador MC1458 ✅ (11, ideal 0), resistores de 10KΩ ✅ (111).
+
+**Roteiro:**
+
+1. No UA741, monte um inversor com resistor de entrada de 4,7KΩ e resistor de realimentação de 10KΩ, com ganho de cerca de −2,1.
+2. No MC1458, monte um somador com dois resistores de entrada iguais.
+3. Aplique tensões de teste com o potenciômetro e meça as saídas com o multímetro.
+
+:::warning
+O UA741 é um operacional antigo e lento. Para sinais rápidos, use os modelos TL082 ou TL072 do próximo exercício.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem analógica.
+
+Cálculos de referência:
+
+- Inversor: ganho = −Rf / Rin. Com Rf = 10KΩ e Rin = 4,7KΩ, o ganho é cerca de −2,1.
+- Somador: Vout = −(Rf/R1 · V1 + Rf/R2 · V2). Com resistores iguais, a saída é a soma invertida.
+- Verifique que o operacional não satura com a alimentação escolhida.
+
+</details>
+
+---
+
+### Exercício 58: Filtro ativo com TL072 e TL082
+
+**Objetivo:** montar um filtro ativo passa-baixa de primeira ordem com ganho, usando os operacionais de baixo ruído TL072 e TL082.
+
+**Materiais:** amplificador TL072 ✅ (3, ideal 0), amplificador TL082 ✅ (5, ideal 5), resistores de 10KΩ ✅ (111) e 4,7KΩ ✅ (68), capacitor de 100nF ✅ (54).
+
+**Roteiro:**
+
+1. No TL072, monte um filtro passa-baixa ativo não inversor, com resistor de realimentação de 10KΩ e resistor de entrada de 4,7KΩ.
+2. No TL082, monte um filtro passa-alta com o mesmo capacitor.
+3. Varie a frequência de entrada e registre a resposta de cada filtro.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem analógica.
+
+Cálculos de referência:
+
+- Ganho do passa-baixa não inversor: 1 + Rf / Rin = 1 + 10 / 4,7 ≈ 3,1 (ganho em baixa frequência).
+- Frequência de corte: f = 1 / (2π · R · C), com C de 100nF e R de 10KΩ, f ≈ 159 Hz.
+- O TL072 tem entrada JFET, com corrente de polarização muito baixa, por isso é adequado para sensores de alta impedância.
+
+</details>
+
+---
+
+### Exercício 59: Isolação óptica com 4N33 e PC817
+
+**Objetivo:** isolar um sinal digital do ESP32 de um circuito de potência usando optoacopladores.
+
+**Materiais:** optoacoplador 4N33 ✅ (2, ideal 0), optoacoplador PC817 🛒 (ideal 10), resistores de 330Ω ✅ (60) e 1KΩ ✅ (199), LED verde ✅ (40).
+
+**Roteiro:**
+
+1. Ligue o GPIO 25 ao LED interno do 4N33 por um resistor de 330Ω.
+2. Ligue o coletor do fototransistor a 3,3 V com resistor de 10KΩ, e a saída ao GPIO 26.
+3. Acione o LED de potência do lado isolado e confira que o ESP32 lê o estado sem ligação elétrica direta.
+
+:::note
+O PC817 está com quantidade 0. Use este exercício com o 4N33 e leia o datasheet do PC817 para comparar o ganho de corrente de cada um.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int ENTRADA = 25, SAIDA_ISO = 26;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ENTRADA, OUTPUT);
+  pinMode(SAIDA_ISO, INPUT_PULLUP);
+}
+
+void loop() {
+  digitalWrite(ENTRADA, HIGH);
+  delay(1000);
+  Serial.printf("Saida isolada=%d\n", digitalRead(SAIDA_ISO));
+  digitalWrite(ENTRADA, LOW);
+  delay(1000);
+  Serial.printf("Saida isolada=%d\n", digitalRead(SAIDA_ISO));
+}
+```
+
+O optoacoplador isola eletricamente os dois lados, e protege o ESP32 contra picos e falhas de terra. Como ele é mais lento que uma ligação direta, não é adequado para sinais de alta frequência.
+
+</details>
+
+---
+
+### Exercício 60: Contadores 74HC90 e CD4017B com LEDs
+
+**Objetivo:** contar pulsos com o contador decádico 74HC90 e sequenciar LEDs com o CD4017B, comandados pelo ESP32.
+
+**Materiais:** contador 74HC90 🛒 (ideal 5), contador CD4017B 🛒 (ideal 5), LEDs vermelhos ✅ (45, ideal 20), resistores de 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o clock do 74HC90 ao GPIO 25, e acompanhe a saída em binário com LEDs.
+2. Use o CD4017B com o mesmo clock, e ligue as dez saídas a LEDs.
+3. Compare a contagem binária do 74HC90 com a sequência de um pino por vez do CD4017B.
+
+:::note
+Os dois C.Is estão com quantidade 0. Este exercício mostra a montagem para quando forem comprados.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int CLOCK = 25;
+
+void setup() {
+  pinMode(CLOCK, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(CLOCK, HIGH);   // a borda de subida conta um pulso
+  delay(500);
+  digitalWrite(CLOCK, LOW);
+  delay(500);
+}
+```
+
+No 74HC90, a contagem é binária e decádica, de 0 a 9. No CD4017B, cada pulso avança a saída ativa para a próxima, e ele é mais simples para sequências. Use o reset dos dois para voltar a zero.
+
+</details>
+
+---
+
+### Exercício 61: Flip-flops 74HC107 e 74HC74
+
+**Objetivo:** montar um circuito de memória com um flip-flop JK e um flip-flop D, e comparar o comportamento de cada um.
+
+**Materiais:** flip-flop JK 74HC107 🛒 (ideal 5), flip-flop D 74HC74 🛒 (ideal 5), LEDs ✅ (45), botões sem retenção ✅ (55, ideal 20).
+
+**Roteiro:**
+
+1. No 74HC74, ligue D a um botão e o clock a outro botão. A saída Q acende um LED.
+2. No 74HC107, configure J = K = 1 e use o clock para alternar a saída.
+3. Registre a tabela verdade de cada flip-flop e compare.
+
+:::note
+Os dois C.Is estão com quantidade 0. Confira a pinagem e a alimentação no datasheet, pois o 74HC107 tem pino de reset assíncrono.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BOTAO_CLK = 25, BOTAO_D = 26;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(BOTAO_CLK, INPUT_PULLUP);
+  pinMode(BOTAO_D, INPUT_PULLUP);
+}
+
+void loop() {
+  static int ultimoClk = HIGH;
+  int clk = digitalRead(BOTAO_CLK);
+  if (ultimoClk == HIGH && clk == LOW) {   // borda de descida do botão
+    Serial.printf("D=%d armazenado no clock\n", digitalRead(BOTAO_D));
+  }
+  ultimoClk = clk;
+  delay(10);
+}
+```
+
+Este código simula o comportamento do flip-flop D no ESP32. O C.I faz a mesma coisa em hardware, sem depender do processador.
+
+</details>
+
+---
+
+### Exercício 62: Schmitt trigger com MM74HC14 e monoestável 74123
+
+**Objetivo:** limpar um sinal ruidoso com o disparador Schmitt MM74HC14 e gerar um pulso de duração fixa com o monoestável 74123.
+
+**Materiais:** Schmitt trigger MM74HC14 🛒 (ideal 5), monoestável 74123 ✅ (3, ideal 5), resistor de 10KΩ ✅ (111), capacitor de 10uF ✅ (41).
+
+**Roteiro:**
+
+1. Aplique um sinal lento e ruidoso ao MM74HC14 e observe a saída limpa com dois níveis.
+2. No 74123, ajuste o resistor e o capacitor para um pulso de cerca de 1 segundo.
+3. Use a borda do botão como gatilho e acione um LED pelo pulso.
+
+:::note
+O MM74HC14 está com quantidade 0. Use o 74123 para o pulso e confira o tempo no datasheet, pois a fórmula depende do resistor e do capacitor.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de lógica.
+
+Cálculos de referência:
+
+- Duração do pulso do 74123: t ≈ 0,45 · R · C. Com R = 10KΩ e C = 10uF, t ≈ 0,045 s.
+- Para 1 segundo, use R = 100KΩ ✅ (74) e C = 22uF ✅ (70): t ≈ 0,45 · 100 000 · 22e-6 ≈ 0,99 s.
+- O Schmitt limpa bordas lentas e ruidosas antes de um contador ou de um flip-flop.
+
+</details>
+
+---
+
+### Exercício 63: Contador síncrono 74HC163 e comparador 7485
+
+**Objetivo:** contar até um valor fixo com o contador síncrono 74HC163 e comparar dois números de 4 bits com o 7485.
+
+**Materiais:** contador síncrono 74HC163 ✅ (1, ideal 5), comparador de 4 bits 7485 ✅ (1, ideal 5), LEDs ✅ (45), resistores de 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. No 74HC163, ligue o clock ao GPIO 25 e acompanhe a contagem nos LEDs.
+2. No 7485, compare a contagem com um valor fixo ajustado por chaves.
+3. Acenda um LED quando a contagem for igual ao valor fixo.
+
+:::note
+Os dois C.Is estão com quantidade abaixo do ideal. O exercício funciona com uma unidade de cada, desde que a pinagem seja conferida no datasheet.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de lógica.
+
+Pontos de verificação:
+
+- O 74HC163 é síncrono: todos os bits mudam na mesma borda de clock, o que evita glitches.
+- Ligue a saída de igualdade do 7485 ao LED e use as entradas A e B para os dois números.
+- Teste com um clock lento, a meio hertz, para ver cada mudança de estado.
+
+</details>
+
+---
+
+### Exercício 64: Decodificadores BCD para 7 segmentos com 7448 e 7446
+
+**Objetivo:** converter um número em código BCD para um display de 7 segmentos, usando os decodificadores 7448 (anodo comum) e 7446 (catodo comum, com saída de corrente maior).
+
+**Materiais:** decodificador 7448 ✅ (3, ideal 0), decodificador 7446 ✅ (2, ideal 0), display de 7 segmentos catodo comum ✅ (22, ideal 10), display de 7 segmentos anodo comum ✅ (5, ideal 5), resistores de 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue as quatro entradas BCD do decodificador aos GPIO 25, 26, 27 e 14.
+2. Com o 7448 e o display de catodo comum, envie os números de 0 a 9 e veja o dígito.
+3. Troque para o 7446 e o display de anodo comum, e confira que a lógica dos segmentos é a inversa.
+
+:::warning
+O 7448 é para display de catodo comum, e o 7446 é para anodo comum. Ligar o display com o decodificador errado deixa o número apagado ou com segmentos acesos ao contrário.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BCD[4] = {25, 26, 27, 14};   // bit 0 a bit 3
+
+void escreverDigito(int d) {
+  for (int b = 0; b < 4; b++) {
+    digitalWrite(BCD[b], (d >> b) & 1);
+  }
+}
+
+void setup() {
+  for (int b = 0; b < 4; b++) pinMode(BCD[b], OUTPUT);
+}
+
+void loop() {
+  for (int d = 0; d <= 9; d++) {
+    escreverDigito(d);
+    delay(1000);
+  }
+}
+```
+
+O decodificador transforma os quatro bits em sete sinais, um para cada segmento. Usar o ESP32 para enviar BCD é mais simples que controlar sete pinos diretamente.
+
+</details>
+
+---
+
+### Exercício 65: Memória EEPROM externa AT24C256
+
+**Objetivo:** guardar e recuperar um valor depois de desligar o ESP32, usando a memória EEPROM externa AT24C256 pelo barramento I2C.
+
+**Materiais:** memória EEPROM AT24C256 🛒 (ideal 10), resistores de 4,7KΩ ✅ (68) para o I2C se necessário.
+
+**Roteiro:**
+
+1. Ligue a EEPROM ao barramento I2C (GPIO 21 e 22), com os pinos de endereço em GND para o endereço 0x50.
+2. Escreva um contador de inicialização no endereço 0 da memória.
+3. Desligue e ligue a placa, e confira que o valor continua salvo.
+
+:::note
+A AT24C256 está com quantidade 0. Este exercício mostra a montagem para quando ela for comprada. Os endereços de escrita têm 2 bytes, pois a memória tem 32 KB.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <Wire.h>
+
+const uint8_t EEPROM_END = 0x50;
+
+void escreverByte(uint16_t endereco, uint8_t valor) {
+  Wire.beginTransmission(EEPROM_END);
+  Wire.write(endereco >> 8);
+  Wire.write(endereco & 0xFF);
+  Wire.write(valor);
+  Wire.endTransmission();
+  delay(5);   // tempo de escrita interna
+}
+
+uint8_t lerByte(uint16_t endereco) {
+  Wire.beginTransmission(EEPROM_END);
+  Wire.write(endereco >> 8);
+  Wire.write(endereco & 0xFF);
+  Wire.endTransmission();
+  Wire.requestFrom(EEPROM_END, (uint8_t)1);
+  return Wire.read();
+}
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+  uint8_t cont = lerByte(0) + 1;
+  escreverByte(0, cont);
+  Serial.printf("Inicializacoes: %d\n", cont);
+}
+
+void loop() {}
+```
+
+A EEPROM tem vida útil limitada por número de escritas, então evite gravar a cada ciclo do loop. Grave somente quando o valor mudar.
+
+</details>
+
+---
+
+### Exercício 66: Par complementar NPN e PNP com BC546 e BC557
+
+**Objetivo:** montar um interruptor com um transistor NPN e um PNP complementares, acionados pelo ESP32.
+
+**Materiais:** transistor BC546 ✅ (9, ideal 20), transistor BC557 ✅ (22, ideal 10), LED verde ✅ (40), resistores de 1KΩ ✅ (199) e 10KΩ ✅ (111).
+
+**Roteiro:**
+
+1. Monte o NPN com a base no GPIO 25 por 1KΩ, o coletor no LED e o emissor no GND.
+2. Monte o PNP com o emissor em 3,3 V, a base no GPIO 26 por 1KΩ, e o coletor no segundo LED.
+3. Alterne os dois LEDs e observe que o PNP acende com nível baixo.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BASE_NPN = 25, BASE_PNP = 26;
+
+void setup() {
+  pinMode(BASE_NPN, OUTPUT);
+  pinMode(BASE_PNP, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(BASE_NPN, HIGH);   // NPN conduz com base em nível alto
+  digitalWrite(BASE_PNP, HIGH);   // PNP fica desligado com base em nível alto
+  delay(1000);
+  digitalWrite(BASE_NPN, LOW);
+  digitalWrite(BASE_PNP, LOW);    // PNP conduz com base em nível baixo
+  delay(1000);
+}
+```
+
+O NPN conduz quando a base recebe corrente positiva, e o PNP conduz quando a base é puxada para baixo. Esse par é a base de muitos circuitos de potência em push-pull.
+
+</details>
+
+---
+
+### Exercício 67: Darlington para cargas de corrente alta
+
+**Objetivo:** acionar uma carga de corrente mais alta com o par Darlington TIP41 (NPN) e TIP42 (PNP), que tem ganho de corrente muito maior que um transistor simples.
+
+**Materiais:** transistor TIP41 ✅ (3, ideal 5), transistor TIP42 ✅ (2, ideal 5), motor DC 5V ✅ (6, ideal 5), diodo 1N4007 ✅ (41), resistor de 1KΩ ✅ (199).
+
+**Roteiro:**
+
+1. Ligue o TIP41 como interruptor do motor, com a base no GPIO 25 por 1KΩ, e o emissor no GND.
+2. Coloque o diodo 1N4007 em paralelo com o motor, no sentido de roda livre.
+3. Troque o TIP41 pelo TIP42 com ligação complementar, e compare a corrente de base necessária.
+
+:::warning
+O TIP41 precisa de dissipador em correntes altas. Não ultrapasse a corrente do datasheet, e confira a polaridade do diodo antes de ligar o motor.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BASE = 25;
+
+void setup() {
+  pinMode(BASE, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(BASE, HIGH);   // motor ligado
+  delay(3000);
+  digitalWrite(BASE, LOW);    // motor desligado
+  delay(3000);
+}
+```
+
+O par Darlington tem queda de tensão maior, de cerca de 1,5 V a 2 V, o que aquece mais que um MOSFET. Para cargas grandes, prefira um MOSFET do submódulo de Sinais e PWM.
+
+</details>
+
+---
+
+### Exercício 68: Cristal de 16 MHz e soquete DIP
+
+**Objetivo:** entender o cristal de 16 MHz e o soquete DIP como elementos de montagem de um microcontrolador independente, sem o ESP32.
+
+**Materiais:** cristal 16MHz ✅ (4, ideal 3), soquete DIP 14 pinos ✅ (1, ideal 10), soquete DIP 16 pinos ✅ (9, ideal 10), capacitores cerâmicos de 22pF 🛒 (ideal 20) × 2.
+
+**Roteiro:**
+
+1. Monte o soquete DIP na protoboard e confira a numeração dos pinos, com o entalhe voltado para cima.
+2. Ligue o cristal aos pinos de clock do chip com dois capacitores de 22pF para o GND.
+3. Meça a frequência com um frequencímetro, se disponível, ou confira o funcionamento com um LED piscando.
+
+:::note
+O ESP32 já tem seu oscilador interno e não precisa de cristal externo para o programa deste curso. Este exercício é para projetos com microcontroladores independentes, como os do tipo ATmega.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de clock.
+
+Pontos de verificação:
+
+- Os capacitores de 22pF são compatíveis com cristais de 16 MHz, mas confira o valor recomendado no datasheet do microcontrolador.
+- O soquete DIP evita soldar o chip, e facilita a troca em caso de falha.
+- Sem o clock correto, o chip não executa código, mesmo com alimentação correta.
+
+</details>
+
+---
+
+### Exercício 69: Transistores de sinal PN2907 e C33725
+
+**Objetivo:** usar os transistores de sinal PN2907 (PNP) e C33725 (NPN) como interruptores para cargas pequenas, como LEDs.
+
+**Materiais:** transistor PN2907 ✅ (11, ideal 10), transistor C33725 ✅ (12, ideal 10), LEDs ✅ (45), resistores de 1KΩ ✅ (199).
+
+**Roteiro:**
+
+1. Monte o C33725 como interruptor de um LED, com a base no GPIO 25 por 1KΩ.
+2. Monte o PN2907 como interruptor de outro LED, com o emissor em 3,3 V e a base no GPIO 26.
+3. Compare a corrente de coletor que cada transistor suporta, no datasheet.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BASE_NPN = 25, BASE_PNP = 26;
+
+void setup() {
+  pinMode(BASE_NPN, OUTPUT);
+  pinMode(BASE_PNP, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(BASE_NPN, HIGH);   // C33725 conduz
+  digitalWrite(BASE_PNP, LOW);    // PN2907 conduz
+  delay(1000);
+  digitalWrite(BASE_NPN, LOW);
+  digitalWrite(BASE_PNP, HIGH);
+  delay(1000);
+}
+```
+
+Esses transistores de sinal são adequados para correntes de até cerca de 100 mA. Para correntes maiores, use os exercícios de MOSFET e Darlington.
+
+</details>
+
+---
+
+### Exercício 70: Montagem e conectores de alimentação
+
+**Objetivo:** organizar a alimentação de um projeto com conector USB-C, conector USB-A e bornes, e identificar a polaridade de cada um.
+
+**Materiais:** conector USB A SMD ✅ (5, ideal 3), borne 2 pinos ✅ (5, ideal 5), conector de bateria 9V ✅ (7, ideal 10), conector Tipo C 🛒 (ideal 10).
+
+**Roteiro:**
+
+1. Monte um conector USB-A na placa de montagem e identifique as quatro vias: VBUS, D-, D+ e GND.
+2. Conecte a alimentação de 5 V ao borne de 2 pinos e confira a polaridade com o multímetro.
+3. Compare o conector Tipo C com o USB-A e registre as diferenças de corrente e orientação.
+
+:::warning
+Inverter a polaridade de VBUS e GND pode danificar o ESP32 e outros módulos. Sempre confira com o multímetro antes de conectar.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Este exercício não tem código, pois é uma montagem de conexões.
+
+Pontos de verificação:
+
+- O USB-A carrega 5 V, mas não identifica a polaridade pela forma do conector.
+- O conector Tipo C tem pinos de configuração que permitem negociar corrente maior.
+- O borne de 2 pinos é uma forma organizada de conectar fontes externas à protoboard.
+
+</details>
+
+---
+
+## 📦 Itens sem exercício neste submódulo
+
+Os itens abaixo estão no inventário, mas não têm exercício próprio, pelo motivo indicado.
+
+- **ST-LINK** (gravador): é específico para microcontroladores STM32, e não grava o ESP32. Use-o apenas em outro projeto.
+- **Arduino Uno, Nano, Leonardo e Mega**: são placas de outra família. Os exercícios usam o ESP32, mas a lógica dos componentes é a mesma.
+- **Raspberry Pi 2 e 3, e Raspberry Pi Pico**: são plataformas diferentes, com sistemas próprios. O Pico usa a linguagem MicroPython ou C/C++ com SDK próprio.
+- **ESP32 S3** (estoque 0): tem a mesma família do DEVKIT, e os exercícios funcionam com pequenos ajustes de pinos, conforme o módulo.
+- **BIT DOG LAB**: o inventário não traz o modelo nem o datasheet. Confirme a função do módulo antes de criar um exercício.
+- **Conector Tipo C** (estoque 0) e **borne de 4 pinos** (estoque 0): cobertos pelo exercício 70, quando comprados.
+- **Módulo ESP32 com tela e touch** (estoque 1): usado no exercício 48 como referência de display.
+
+---
+
+## 🗺 Mapa de Cobertura
+
+Esta tabela confere que cada item de sensores e displays do inventário aparece em pelo menos um exercício.
+
+| Item do inventário | Código | Exercício(s) |
+| --- | --- | --- |
+| Sensor de radiofrequência | RFID-RC522 | 43 |
+| Display LCD | HC 1624-B-LWH | 47 |
+| Sensor de umidade e temperatura | DHT11 | 25 |
+| Sensor de cor | TCS3200 | 15 |
+| Sensor de rotação | HW-040 | 10 |
+| Display LCD | 1602 | 47 |
+| Sensor de som | KY-037 | 33 |
+| Sensor de distância | HC-SR04 | 22, 23 |
+| Módulo gravador de áudio | ISD1820 | 34 |
+| Módulo Bluetooth | HC-05 | comunicação e IoT, ex. 4 |
+| Conversor step-up | MT3608 | 40 |
+| Sensor de temperatura | DS18B20 | 27 |
+| Sensor óptico reflexivo | TRCT5000 | 14 |
+| LDR grande | LDR | 12, 37 |
+| LDR pequeno | LDR | 12 |
+| Sensor magnético | KY-025 | 6 |
+| Sensor de temperatura | KY-028 | 28 |
+| Sensor de toque | KY-036 | 1 |
+| Sensor de chama | KY-026 | 2 |
+| Sensor de som | KY-030 | 34 |
+| Sensor Hall | KY-024 | 8 |
+| Sensor de rotação | KY-040 | 10 |
+| Sensor de inclinação | KY-017 (2 linhas) | 3 |
+| Sensor de vibração | KY-002 | 4 |
+| Sensor de vibração | KY-031 | 4 |
+| Emissor de laser | KY-008 | 17 |
+| Sensor de luminosidade | KY-018 | 13 |
+| Sensor Hall | KY-003 | 7 |
+| Sensor Hall | KY-035 | 7 |
+| Sensor magnético | KY-021 | 6 |
+| Sensor de inclinação | KY-020 | 3 |
+| Sensor de infravermelho | KY-032 | 19 |
+| LED RGB | KY-009 | 16 |
+| Sensor óptico | KY-010 | 14 |
+| Sensor de infravermelho | KY-022 | 18 |
+| Sensor de temperatura | KY-001 | 27 |
+| Sensor de infravermelho | KY-039 | 20 |
+| LED 7 cores | KY-034 | 16 |
+| Sensor de inclinação | KY-027 | 5 |
+| Conversor de nível lógico | 4 canais | 23, 37 |
+| Termistor NTC | 10D-9 | 26, 28 |
+| Display TFT | ST7735 | 45 |
+| Sensor touch capacitivo | TTP223B | 1 |
+| Placa de expansão de visão | CMUcam4 | 50 |
+| Display OLED | SSD1306 | 46 |
+| Sensor de batimentos e oxigênio | MAX30102 | 20 |
+| Chave fim de curso | Módulo | 5 |
+| Módulo RF 433 MHz | Transmissor e receptor | comunicação e IoT, ex. 11 |
+| Receptor infravermelho | TSOP4838 | 18 |
+| Sensor de corrente | ACS712 | 36 |
+| Sensor de gás | Série MQ | 30 |
+| Módulo semáforo | Atuador | 17 |
+| Sensor de movimento | HC-SR501 | 21 |
+| Módulo de câmera de vídeo | Câmera | 49 |
+| Sensor de umidade do solo | HL-69 | 29 |
+| Minicâmera analógica | Câmera | 49 |
+| Sensor piezo elétrico | Piezo | 31 |
+| Sensor de chuva | HW-028 | 28 |
+| Célula de carga | HX711 | 32 |
+| Gravador ST-LINK | ST-LINK | itens sem exercício |
+| Sensor de digital | AS608 | 44 |
+| Sensor de nível de água | FD10 | 29 |
+| Display TFT | 2,4" touch | 45 |
+| Sensor Hall bipolar com retenção | US1881 | 8 |
+| Sensor Hall digital unipolar | A3144E | 9 |
+| Sensor Hall linear | AH49E | 9 |
+| Receptor infravermelho | VS1838B | 19 |
+| Sensor de corrente 50 A | HWCT004 | 35 |
+| Sensor de distância a laser | VL53 | 22 |
+| Detector de movimento PIR | EKMB | 21 |
+| Unidade de medida inercial | ICM-42670-P | 24 |
+| Sensor de luz ambiente | VEML7700 | 13 |
+| Display IHM | Nextion 3,5" | 48 |
+| Display OLED circular | GC9A01 | 46 |
+| Display E-paper | E-Ink | 48 |
+| Ponte H | L298N | 51 |
+| Carregador de baterias | TP4056 | 39 |
+| Magnetômetro digital | HMC5883L | 24 |
+| Sensor de pressão | FSR402 | 31 |
+| Relé de estado sólido | SSR-25DA | 54 |
+| Transceptor LoRa | SX1278 | comunicação e IoT, ex. 10 |
+| Módulo GPS | NEO-6M | comunicação e IoT, ex. 12 |
+| Sensor de pressão e temperatura | BMP280 | 25 |
+| Sensor de temperatura e umidade | SHT31 | 26 |
+| Sensor de corrente e tensão | INA219 | 36 |
+| Relé 5 V | Relé | 53 |
+| Relé 12 V | Relé | 54 |
+| Motor DC 5 V | Motor | 35, 51, 67 |
+| Motor de passo 5 V | Motor | 52 |
+| Servo motor | Servo | 43 |
+| Bomba de água | Bomba | 53 |
+| Painel solar | 6V 180mA | 39 |
+| Bateria 3,7 V | Bateria | 39, 40 |
+| Bateria 9 V | Bateria | 41 |
+| Pilhas AA e AAA | Pilha | 42 |
+| Fusível 5x20 mm | Fusível | 38 |
+| Conversor DC-DC | DC-DC | 38 |
+| Célula de carga 3 V | Célula | 32 |
+| Módulo Bluetooth RS-232 | HC-05 | comunicação e IoT, ex. 4 |
+| Microfone | Geral | 33 |
+| Potenciômetro linear | B10KΩ | 11 |
+| Potenciômetro logarítmico | A10KΩ | 11 |
+| Chave alavanca | Chave | 55 |
+| Dip switch 8 vias | Chave | 55 |
+| Borne 3 pinos | Borne | 55 |
+| Cristal 16 MHz | Cristal | 68 |
+| Soquete DIP | 8, 14, 16 e 18 pinos | 68 |
+| Protoboard | Geral | todos os exercícios |
+| Memória EEPROM | AT24C256 | 65 |

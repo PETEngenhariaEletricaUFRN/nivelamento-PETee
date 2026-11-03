@@ -1,11 +1,661 @@
 ---
-slug: /programacao-hardware/interrupcoes-de-hardware
+id: exercicios-interrupcoes-hardware
+title: Exercícios - Interrupções de Hardware
+sidebar_label: 5. Interrupções de Hardware
+sidebar_position: 5
+description: Lista de exercícios sobre interrupções de hardware no ESP32, com ISRs, timers, contagem de pulsos, encoders, sensores de movimento, toque, vibração e acordar do modo deep sleep.
 ---
 
-# Interrupções de Hardware
+Esta lista tem **11 exercícios** sobre interrupções de hardware. Em vez de perguntar ao pino a cada volta do `loop()` se algo aconteceu, você deixa o hardware avisar o processador no momento exato do evento.
 
-Exercícios sobre eventos assíncronos e tratamento de interrupções de hardware.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+- **ESP32 DEVKIT** (estoque: 5) e cabo USB
+- **Arduino IDE** ou **PlatformIO** com o pacote *esp32 by Espressif* (versão 3.x)
+- Protoboard (estoque: 21), jumpers, LEDs e resistores
+- Ímã de neodímio pequeno, para os exercícios com sensor Hall
+- Motor DC 5 V com ponte H L293D, para o exercício 5
 
-Adicione aqui os exercícios deste submódulo.
+:::note
+**Legenda de estoque.** ✅ indica que o item já está no laboratório, com a quantidade entre parênteses. 🛒 indica que ainda precisa ser comprado.
+:::
+
+:::danger
+Dentro de uma ISR (função de interrupção), evite `Serial.print()`, `delay()`, alocação de memória e chamadas longas. Essas operações podem travar o sistema ou causar reinicializações. A ISR deve apenas registrar o evento, e o `loop()` faz o restante.
+:::
+
+:::warning
+Declare a função de interrupção com `IRAM_ATTR` e as variáveis compartilhadas com `volatile`. Sem isso, o compilador ou a memória flash podem causar comportamento errado.
+:::
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Primeira interrupção com botão
+
+**Objetivo:** configurar uma interrupção externa com `attachInterrupt()` e contar eventos sem consultar o pino no `loop()`.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), botão sem retenção ✅ (55), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o botão em GPIO 4 com pull-up interno. Ligue o LED em GPIO 26.
+2. Crie uma ISR que incrementa um contador na borda de descida.
+3. No `loop()`, imprima o contador somente quando ele mudar, e inverta o LED a cada evento.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_BOTAO = 4;
+const int PINO_LED = 26;
+
+volatile unsigned long contagem = 0;
+volatile unsigned long ultimoEvento = 0;
+
+void IRAM_ATTR aoPressionar() {
+  unsigned long agora = millis();
+  if (agora - ultimoEvento > 50) {    // debounce simples dentro da ISR
+    contagem++;
+    ultimoEvento = agora;
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_LED, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(PINO_BOTAO), aoPressionar, FALLING);
+}
+
+void loop() {
+  static unsigned long anterior = 0;
+  noInterrupts();
+  unsigned long atual = contagem;
+  interrupts();
+
+  if (atual != anterior) {
+    anterior = atual;
+    digitalWrite(PINO_LED, atual % 2);
+    Serial.println(atual);
+  }
+}
+```
+
+A leitura de `contagem` no `loop()` é protegida com `noInterrupts()` e `interrupts()`, porque um valor de 32 bits pode ser lido pela metade se uma interrupção ocorrer no meio da leitura.
+
+</details>
+
+---
+
+### Exercício 2: Dois encoders rotativos: KY-040 e HW-040
+
+**Objetivo:** decodificar o sentido de rotação de um encoder incremental, usando interrupções nos dois canais.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), encoder rotativo KY-040 ✅ (1, ideal 5), encoder rotativo HW-040 ✅ (1, ideal 3), resistores de pull-up (use os internos do ESP32), LED verde ✅ (40).
+
+**Roteiro:**
+
+1. Ligue o canal CLK do KY-040 em GPIO 16 e o canal DT em GPIO 17. Use `INPUT_PULLUP`.
+2. Em uma ISR, leia o outro canal para decidir o sentido: se CLK e DT são diferentes na borda, é um sentido; se são iguais, é o outro.
+3. Repita com o HW-040 em outros pinos e compare os dois encoders, sem misturar as contagens.
+
+:::note
+Encoders mecânicos têm vibração de contato. Se a contagem sair errada, adicione um filtro de tempo na ISR, como no exercício 1.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int KY_CLK = 16, KY_DT = 17;
+const int HW_CLK = 18, HW_DT = 19;
+
+volatile long posKY = 0, posHW = 0;
+
+void IRAM_ATTR isrKY() {
+  // Na borda de CLK, DT diferente de CLK indica um sentido
+  if (digitalRead(KY_CLK) != digitalRead(KY_DT)) posKY++;
+  else posKY--;
+}
+
+void IRAM_ATTR isrHW() {
+  if (digitalRead(HW_CLK) != digitalRead(HW_DT)) posHW++;
+  else posHW--;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(KY_CLK, INPUT_PULLUP); pinMode(KY_DT, INPUT_PULLUP);
+  pinMode(HW_CLK, INPUT_PULLUP); pinMode(HW_DT, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(KY_CLK), isrKY, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(HW_CLK), isrHW, CHANGE);
+}
+
+void loop() {
+  static long anteriorKY = 0, anteriorHW = 0;
+  long ky = posKY, hw = posHW;
+  if (ky != anteriorKY || hw != anteriorHW) {
+    anteriorKY = ky; anteriorHW = hw;
+    Serial.printf("KY=%ld  HW=%ld\n", ky, hw);
+  }
+}
+```
+
+Cada encoder tem sua própria posição, o que permite comparar a resolução e a qualidade dos dois módulos.
+
+</details>
+
+---
+
+### Exercício 3: Medindo velocidade de rotação com o sensor Hall KY-003
+
+**Objetivo:** medir o tempo entre pulsos de um sensor Hall digital e calcular rotações por minuto (RPM).
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor Hall digital KY-003 ✅ (1, ideal 1), ímã de neodímio ✅ (use um ímã pequeno), suporte com disco ou eixo girante (pode ser um motor DC ✅ (6) com um ímã colado no eixo), LED ✅ (40).
+
+**Roteiro:**
+
+1. Ligue a saída digital do KY-003 em GPIO 27, com a alimentação de 3,3 V ou 5 V conforme o módulo.
+2. Fixe o ímã no eixo girante. Cada passagem do ímã gera um pulso.
+3. Use uma ISR para registrar o instante de cada pulso e calcule o RPM com a diferença de tempo.
+
+$$\text{RPM} = \frac{60\,000}{\Delta t\,(\text{ms})}$$
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_HALL = 27;
+
+volatile unsigned long ultimoPulso = 0;
+volatile unsigned long periodo = 0;
+volatile bool novoPeriodo = false;
+
+void IRAM_ATTR aoPulsar() {
+  unsigned long agora = micros();
+  if (ultimoPulso != 0) {
+    periodo = agora - ultimoPulso;
+    novoPeriodo = true;
+  }
+  ultimoPulso = agora;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_HALL, INPUT);
+  attachInterrupt(digitalPinToInterrupt(PINO_HALL), aoPulsar, FALLING);
+}
+
+void loop() {
+  if (novoPeriodo) {
+    noInterrupts();
+    unsigned long p = periodo;
+    novoPeriodo = false;
+    interrupts();
+
+    float rpm = 60000000.0 / p;    // período em microssegundos
+    Serial.printf("RPM: %.0f\n", rpm);
+  }
+}
+```
+
+Essa medida é mais precisa do que contar pulsos em um intervalo fixo, sobretudo em rotações baixas.
+
+</details>
+
+---
+
+### Exercício 4: Contando peças com o sensor óptico reflexivo TRCT5000
+
+**Objetivo:** detectar a passagem de objetos com um sensor óptico reflexivo e contar eventos com interrupção.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor óptico reflexivo TRCT5000 ✅ (9, ideal 5), esteira ou fita com peças brancas e pretas, LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue a saída do TRCT5000 (já com seu circuito de comparação, se o módulo tiver) em GPIO 25. Confira a polaridade do sensor pelo datasheet.
+2. Configure uma interrupção na borda de transição e conte as peças que passam pelo sensor.
+3. Acenda o LED a cada 10 peças contadas.
+
+:::note
+O TRCT5000 é um fototransistor com LED infravermelho. A saída depende da refletância da superfície, então ajuste a distância entre sensor e peça até obter uma transição limpa.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_SENSOR = 25;
+const int PINO_LED = 26;
+
+volatile unsigned int pecas = 0;
+
+void IRAM_ATTR aoDetectar() {
+  pecas++;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_SENSOR, INPUT);
+  pinMode(PINO_LED, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(PINO_SENSOR), aoDetectar, RISING);
+}
+
+void loop() {
+  static unsigned int anterior = 0;
+  unsigned int atual;
+  noInterrupts(); atual = pecas; interrupts();
+
+  if (atual != anterior) {
+    anterior = atual;
+    Serial.printf("Peças: %u\n", atual);
+    digitalWrite(PINO_LED, (atual / 10) % 2);
+  }
+}
+```
+
+Para evitar contagens duplas por ruído, combine esta ISR com um filtro de tempo, como nos exercícios anteriores.
+
+</details>
+
+---
+
+### Exercício 5: Parada de emergência com chave fim de curso
+
+**Objetivo:** interromper imediatamente um motor quando um fim de curso for acionado, usando interrupção em vez de checagem periódica.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), módulo chave fim de curso ✅ (5), motor DC 5 V ✅ (6), ponte H L293D ✅ (1), fonte 5 V (LM7805 ✅ (14)), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o fim de curso em GPIO 4 com pull-up. Ele deve ser acionado no fim do curso mecânico.
+2. Ligue o motor à ponte H L293D, controlado pelos pinos IN1 e IN2 do exercício de PWM.
+3. Crie uma ISR que desliga o motor assim que o fim de curso for acionado, e acende o LED de alerta.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_FIM_CURSO = 4;
+const int IN1 = 26, IN2 = 25, EN = 33;   // ponte H L293D
+const int PINO_LED = 27;
+
+volatile bool paradaSolicitada = false;
+
+void IRAM_ATTR aoAcionarFimCurso() {
+  // Desliga os pinos de potência diretamente na ISR, o mais rápido possível
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  ledcWrite(EN, 0);
+  paradaSolicitada = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_FIM_CURSO, INPUT_PULLUP);
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(PINO_LED, OUTPUT);
+  ledcAttach(EN, 1000, 8);
+
+  attachInterrupt(digitalPinToInterrupt(PINO_FIM_CURSO), aoAcionarFimCurso, FALLING);
+
+  digitalWrite(IN1, HIGH);     // motor para a frente
+  digitalWrite(IN2, LOW);
+  ledcWrite(EN, 180);
+}
+
+void loop() {
+  if (paradaSolicitada) {
+    digitalWrite(PINO_LED, HIGH);
+    Serial.println("Fim de curso acionado: motor parado");
+    paradaSolicitada = false;
+  }
+}
+```
+
+Essa é a diferença entre interrupção e verificação periódica: o motor para no instante do acionamento, e não no próximo ciclo do `loop()`.
+
+</details>
+
+---
+
+### Exercício 6: Acordando do deep sleep com sensor de movimento PIR
+
+**Objetivo:** colocar o ESP32 em modo de baixo consumo e acordá-lo quando o sensor PIR detectar movimento.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor de movimento PIR HC-SR501 ✅ (8, ideal 5), LED vermelho ✅ (45), resistor 220Ω ✅ (127), monitor serial.
+
+**Roteiro:**
+
+1. Ligue a saída do HC-SR501 em GPIO 33. Esse pino é um pino RTC, necessário para acordar do deep sleep.
+2. Configure o ESP32 para acordar quando GPIO 33 for para nível alto.
+3. A cada acordar, pisque o LED 3 vezes, imprima o motivo do despertar e volte ao deep sleep.
+
+:::warning
+O HC-SR501 tem um tempo de aquecimento de cerca de 30 a 60 segundos após ser ligado e pode ter disparos falsos nesse período. Aguarde antes de testar.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include "esp_sleep.h"
+
+const gpio_num_t PINO_PIR = GPIO_NUM_33;
+const int PINO_LED = 26;
+
+RTC_DATA_ATTR int despertares = 0;   // mantém o valor no deep sleep
+
+void piscar(int vezes) {
+  for (int i = 0; i < vezes; i++) {
+    digitalWrite(PINO_LED, HIGH); delay(150);
+    digitalWrite(PINO_LED, LOW);  delay(150);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_LED, OUTPUT);
+
+  esp_sleep_wakeup_cause_t causa = esp_sleep_get_wakeup_cause();
+  despertares++;
+  Serial.printf("Despertar #%d, causa: %d\n", despertares, causa);
+  piscar(3);
+
+  esp_sleep_enable_ext0_wakeup(PINO_PIR, HIGH);   // acorda com nível alto
+  Serial.println("Entrando em deep sleep");
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // não é executado: o ESP32 reinicia o setup() a cada despertar
+}
+```
+
+Ao acordar do deep sleep, a memória comum é perdida, mas as variáveis marcadas com `RTC_DATA_ATTR` sobrevivem. Por isso, o contador de despertares continua de onde parou.
+
+</details>
+
+---
+
+### Exercício 7: Timer de hardware com interrupção periódica
+
+**Objetivo:** usar o timer de hardware do ESP32 para gerar uma interrupção em intervalo exato, independentemente do `loop()`.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), LED verde ✅ (40), LED vermelho ✅ (45), resistores 220Ω ✅ (127), buzzer ativo ✅ (8), transistor BC547 ✅ (21), resistor 1kΩ ✅ (199).
+
+**Roteiro:**
+
+1. Crie um timer de 1 MHz, que conta microssegundos.
+2. Configure um alarme para disparar a cada 500 ms, com recarga automática.
+3. Na ISR do timer, alterne o LED verde. No `loop()`, faça uma tarefa lenta qualquer (como um `delay(2000)`) e observe que o LED continua piscando com o período correto.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_LED = 26;
+hw_timer_t *timer = NULL;
+volatile bool estado = false;
+
+void IRAM_ATTR aoTimer() {
+  estado = !estado;
+  digitalWrite(PINO_LED, estado);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_LED, OUTPUT);
+
+  // ESP32 Arduino Core 3.x: timer com frequência de 1 MHz
+  timer = timerBegin(1000000);
+  timerAttachInterrupt(timer, &aoTimer);
+  timerAlarm(timer, 500000, true, 0);     // 500 ms, recarga automática
+}
+
+void loop() {
+  Serial.println("tarefa lenta");
+  delay(2000);     // o timer continua funcionando durante o delay
+}
+```
+
+O timer de hardware não depende do `loop()`. Por isso, ele é adequado para tarefas que exigem temporização precisa, como amostragem de sensores.
+
+</details>
+
+---
+
+### Exercício 8: Sensor de toque capacitivo TTP223B
+
+**Objetivo:** detectar toque com um sensor de saída digital e entender a diferença entre sensor de toque capacitivo e botão mecânico.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor de toque capacitivo TTP223B ✅ (2, ideal 2), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Alimente o TTP223B em 3,3 V e ligue a saída em GPIO 27.
+2. Crie uma interrupção na borda de subida, que acende o LED por 1 segundo.
+3. Compare com um botão: o TTP223B não tem contato mecânico, então não há *bouncing* no sentido clássico, mas a saída pode oscilar se o toque for leve.
+
+:::tip
+Alguns módulos TTP223B têm jumpers de modo (sem retenção ou com retenção). Confira o módulo antes de montar, pois o comportamento muda.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_TOQUE = 27;
+const int PINO_LED = 26;
+
+volatile bool tocou = false;
+
+void IRAM_ATTR aoTocar() {
+  tocou = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_TOQUE, INPUT);
+  pinMode(PINO_LED, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(PINO_TOQUE), aoTocar, RISING);
+}
+
+void loop() {
+  if (tocou) {
+    tocou = false;
+    Serial.println("Toque detectado");
+    digitalWrite(PINO_LED, HIGH);
+    delay(1000);
+    digitalWrite(PINO_LED, LOW);
+  }
+}
+```
+
+O ESP32 também tem pinos de toque internos (`touchRead()` e `touchAttachInterrupt()`), que dispensam um sensor externo. Experimente comparar os dois tipos de toque.
+
+</details>
+
+---
+
+### Exercício 9: Detectando batidas com sensores de vibração KY-002 e KY-031
+
+**Objetivo:** contar batidas com dois sensores de vibração, identificando o sensor que detectou o evento.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor de vibração KY-002 ✅ (1, ideal 1), sensor de vibração KY-031 ✅ (1, ideal 1), LED verde ✅ (40), LED vermelho ✅ (45), resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue o KY-002 em GPIO 16 e o KY-031 em GPIO 17, com pull-up se necessário.
+2. Crie uma ISR para cada sensor. Cada uma registra qual sensor disparou e quando.
+3. No `loop()`, aplique um filtro de 100 ms para ignorar vibrações repetidas da mesma batida, e mostre o sensor que detectou o evento.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_A = 16, PINO_B = 17;
+const int LED_A = 26, LED_B = 25;
+
+volatile unsigned long tempoA = 0, tempoB = 0;
+
+void IRAM_ATTR isrA() { tempoA = millis(); }
+void IRAM_ATTR isrB() { tempoB = millis(); }
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_A, INPUT_PULLUP);
+  pinMode(PINO_B, INPUT_PULLUP);
+  pinMode(LED_A, OUTPUT);
+  pinMode(LED_B, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(PINO_A), isrA, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PINO_B), isrB, FALLING);
+}
+
+void loop() {
+  static unsigned long ultimaBatida = 0;
+  unsigned long a, b;
+  noInterrupts(); a = tempoA; b = tempoB; interrupts();
+
+  unsigned long ultimo = max(a, b);
+  if (ultimo != 0 && ultimo != ultimaBatida && millis() - ultimo >= 100) {
+    ultimaBatida = ultimo;
+    if (a > b) {
+      Serial.println("Batida no KY-002");
+      digitalWrite(LED_A, HIGH); delay(100); digitalWrite(LED_A, LOW);
+    } else {
+      Serial.println("Batida no KY-031");
+      digitalWrite(LED_B, HIGH); delay(100); digitalWrite(LED_B, LOW);
+    }
+  }
+}
+```
+
+Esse código usa `delay(100)` para piscar o LED, o que é aceitável aqui, pois o objetivo é mostrar a identificação do sensor. Para um sistema que precisa responder a outros eventos, troque por uma verificação de tempo.
+
+</details>
+
+---
+
+### Exercício 10: Alarme de chama com sensor KY-026
+
+**Objetivo:** disparar um alarme sonoro assim que o sensor de chama detectar luz de fogo, usando interrupção.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor de chama KY-026 ✅ (1, ideal 0), buzzer ativo ✅ (8), transistor BC547 ✅ (21), resistor 1kΩ ✅ (199), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Ligue a saída digital do KY-026 em GPIO 27. Ajuste o potenciômetro do módulo para definir a sensibilidade.
+2. Na borda de descida (chama detectada), a ISR marca o alarme e o `loop()` toca o buzzer e acende o LED.
+3. Ao cessar a chama, desligue o alarme somente após um botão de reset.
+
+:::danger
+Este exercício simula um alarme de chama com um isqueiro ou uma vela. **Nunca** use chama real sem supervisão, e tenha um extintor por perto. O sensor deve ser testado com uma fonte de luz segura, como um LED de luz forte.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_CHAMA = 27;
+const int PINO_BUZZER = 26;
+const int PINO_LED = 25;
+const int PINO_RESET = 4;
+
+volatile bool alarme = false;
+
+void IRAM_ATTR aoDetectarChama() {
+  alarme = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_CHAMA, INPUT_PULLUP);
+  pinMode(PINO_BUZZER, OUTPUT);
+  pinMode(PINO_LED, OUTPUT);
+  pinMode(PINO_RESET, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(PINO_CHAMA), aoDetectarChama, FALLING);
+}
+
+void loop() {
+  if (alarme) {
+    digitalWrite(PINO_BUZZER, HIGH);
+    digitalWrite(PINO_LED, HIGH);
+    Serial.println("ALARME: chama detectada");
+  }
+  if (digitalRead(PINO_RESET) == LOW) {   // botão de reset
+    alarme = false;
+    digitalWrite(PINO_BUZZER, LOW);
+    digitalWrite(PINO_LED, LOW);
+  }
+}
+```
+
+O alarme é travado até o reset manual, o que evita que ele se desligue sozinho quando a chama é apenas momentânea.
+
+</details>
+
+---
+
+### Exercício 11: Detectando gás com o sensor MQ e saída digital de limite
+
+**Objetivo:** usar a saída digital do sensor de gás da série MQ como interrupção, e entender que ela indica um limite ajustado no potenciômetro do módulo.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor de gás série MQ ✅ (2, ideal 2), buzzer ativo ✅ (8), LED vermelho ✅ (45), resistor 220Ω ✅ (127), transistor BC547 ✅ (21).
+
+**Roteiro:**
+
+1. Ligue a saída digital (DO) do MQ em GPIO 16. Ligue VCC e GND conforme o módulo.
+2. Aguarde o aquecimento do sensor (cerca de 2 minutos) antes de testar.
+3. Crie uma interrupção na borda de descida de DO, que indica gás acima do limite. Acione o buzzer e o LED.
+4. Compare a saída digital com a leitura analógica (AO) do mesmo módulo, lida em GPIO 34.
+
+:::warning
+O sensor MQ precisa de aquecimento e não é um detector preciso de gás. Use-o apenas para detecção qualitativa em laboratório. Nunca use como alarme de segurança real. Para a leitura analógica, lembre que o ESP32 aceita no máximo 3,3 V.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_DO = 16;      // saída digital (limite ajustado no potenciômetro)
+const int PINO_AO = 34;      // saída analógica (somente entrada no ESP32)
+const int PINO_BUZZER = 26;
+const int PINO_LED = 25;
+
+volatile bool limiteAtingido = false;
+
+void IRAM_ATTR aoAtingirLimite() {
+  limiteAtingido = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_DO, INPUT);
+  pinMode(PINO_BUZZER, OUTPUT);
+  pinMode(PINO_LED, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(PINO_DO), aoAtingirLimite, FALLING);
+}
+
+void loop() {
+  static unsigned long ultimaLeitura = 0;
+  if (millis() - ultimaLeitura >= 1000) {
+    ultimaLeitura = millis();
+    Serial.printf("Leitura analógica: %d\n", analogRead(PINO_AO));
+  }
+
+  if (limiteAtingido) {
+    limiteAtingido = false;
+    Serial.println("Limite de gás atingido");
+    digitalWrite(PINO_BUZZER, HIGH);
+    digitalWrite(PINO_LED, HIGH);
+    delay(500);
+    digitalWrite(PINO_BUZZER, LOW);
+    digitalWrite(PINO_LED, LOW);
+  }
+}
+```
+
+A saída digital indica apenas que o limite foi ultrapassado. A saída analógica dá a intensidade relativa, mas precisa de calibração para ser interpretada em partes por milhão.
+
+</details>

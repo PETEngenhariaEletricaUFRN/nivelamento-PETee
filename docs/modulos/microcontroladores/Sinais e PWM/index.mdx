@@ -1,11 +1,627 @@
 ---
-slug: /programacao-hardware/sinais-e-pwm
+id: exercicios-sinais-pwm
+title: Exercícios - Sinais e PWM
+sidebar_label: 2. Sinais e PWM
+sidebar_position: 2
+description: Lista de exercícios sobre geração de sinais, PWM, servomotores, motores, pontes H, drivers de potência, temporizadores e reguladores de tensão com o ESP32.
 ---
 
-# Sinais e PWM
+Esta lista tem **14 exercícios** sobre sinais e PWM. Você vai do controle de brilho de um LED até o acionamento de motores de maior potência, passando por servos, pontes H, o temporizador 555, o controlador TL494 e reguladores de tensão.
 
-Exercícios sobre geração, leitura e controle de sinais usando PWM.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+- **ESP32 DEVKIT** (estoque: 5) e cabo USB
+- **Fonte 12 V 5 A** (estoque: 2) e **fonte 12 V 10 A** (estoque: 1), no armário cinza
+- **Osciloscópio** (recomendado) e **multímetro**
+- **Arduino IDE** ou **PlatformIO** com o pacote *esp32 by Espressif* (versão 3.x)
+- Protoboard (estoque: 21), jumpers e resistores variados
 
-Adicione aqui os exercícios deste submódulo.
+:::note
+**Legenda de estoque.** ✅ indica que o item já está no laboratório, com a quantidade entre parênteses. 🛒 indica que ainda precisa ser comprado.
+:::
+
+:::note
+No ESP32 Arduino Core 3.x, o PWM é configurado com `ledcAttach(pino, frequência, resolução)` e atualizado com `ledcWrite(pino, valor)`. Versões 2.x usam `ledcSetup` e `ledcAttachPin`. Confira a versão instalada antes de copiar um exemplo.
+:::
+
+:::danger
+Motores, bombas e fontes de 12 V podem causar choques, queimaduras ou danos ao ESP32 se mal ligados. Sempre use um **driver de potência** entre o ESP32 e a carga, e conecte os GNDs em comum. Nunca alimente um motor diretamente de um pino do microcontrolador.
+:::
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Controlando o brilho de um LED com PWM
+
+**Objetivo:** gerar um sinal PWM e entender como o ciclo de trabalho controla a potência média entregue à carga.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), LED vermelho ✅ (45), resistor 220Ω ✅ (127), osciloscópio ✅ (se disponível).
+
+**Roteiro:**
+
+1. Configure o PWM no pino 26, com frequência de 5 kHz e resolução de 8 bits.
+2. Varie o brilho de 0 a 255 e depois de volta a 0, em passos pequenos.
+3. Se houver osciloscópio, meça o ciclo de trabalho em 25%, 50% e 75%.
+
+$$D = \frac{t_{on}}{T} \qquad V_{média} = D \cdot V_{cc}$$
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_LED = 26;
+
+void setup() {
+  ledcAttach(PINO_LED, 5000, 8);   // 5 kHz, 8 bits
+}
+
+void loop() {
+  for (int d = 0; d <= 255; d++) {
+    ledcWrite(PINO_LED, d);
+    delay(5);
+  }
+  for (int d = 255; d >= 0; d--) {
+    ledcWrite(PINO_LED, d);
+    delay(5);
+  }
+}
+```
+
+Com 8 bits, o valor 128 corresponde a um ciclo de trabalho de aproximadamente 50%, e o LED aparece com cerca de metade do brilho. A percepção de brilho não é linear: para um efeito mais natural, aplique uma correção gama.
+
+</details>
+
+---
+
+### Exercício 2: Controlando um servomotor
+
+**Objetivo:** gerar um sinal de 50 Hz com pulsos de 1 a 2 ms e posicionar o eixo do servo.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), servomotor ✅ (10), fonte externa 5 V (use a fonte 12 V com regulador LM7805 ✅ (14), ou o conversor DC-DC ✅ (5)), capacitor eletrolítico 100uF ✅ (29) no barramento de alimentação do servo.
+
+**Roteiro:**
+
+1. Alimente o servo com a fonte externa, não com o 3,3 V do ESP32. Ligue os GNDs juntos.
+2. Coloque o sinal de controle no pino 18, com 50 Hz e resolução de 16 bits.
+3. Posicione o servo em 0°, 90° e 180°, aguardando um segundo em cada posição.
+
+:::tip
+A posição de um servo costuma ser especificada entre 1000 e 2000 µs. Ajuste esses limites se o seu servo chegar ao fim do curso antes do esperado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_SERVO = 18;
+
+// Converte ângulo (0 a 180) em duty de 16 bits para 50 Hz
+uint32_t duty(int angulo) {
+  float pulso_us = 1000.0 + (angulo / 180.0) * 1000.0;   // 1 a 2 ms
+  float periodo_us = 20000.0;                            // 50 Hz
+  return (uint32_t)((pulso_us / periodo_us) * 65535);
+}
+
+void setup() {
+  ledcAttach(PINO_SERVO, 50, 16);   // 50 Hz, 16 bits
+}
+
+void loop() {
+  int posicoes[3] = {0, 90, 180};
+  for (int i = 0; i < 3; i++) {
+    ledcWrite(PINO_SERVO, duty(posicoes[i]));
+    delay(1000);
+  }
+}
+```
+
+Note que o servo não recebe corrente do pino. Ele recebe a alimentação da fonte externa, e o pino apenas envia o sinal de referência.
+
+</details>
+
+---
+
+### Exercício 3: Controlando a velocidade de um motor DC com transistor
+
+**Objetivo:** variar a velocidade de um motor DC de 5 V usando PWM e um transistor como chave.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), motor DC 5 V ✅ (6), transistor NPN BC547 ✅ (21) ou TIP31 ✅ (3), diodo 1N4007 ✅ (41), resistor 1kΩ ✅ (199), fonte 5 V (regulador LM7805 ✅ (14)).
+
+**Roteiro:**
+
+1. Ligue o motor entre 5 V e o coletor do transistor, com o diodo 1N4007 em paralelo com o motor (cátodo no 5 V).
+2. Ligue a base ao pino 26 pelo resistor de 1kΩ.
+3. Aumente a velocidade em degraus de 25% e observe a diferença de rotação.
+
+:::warning
+Motores são cargas indutivas. Sem o diodo de roda livre, a tensão reversa pode destruir o transistor. Verifique a corrente do motor antes de escolher o transistor.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_MOTOR = 26;
+
+void setup() {
+  ledcAttach(PINO_MOTOR, 1000, 8);   // 1 kHz é adequado para motores DC
+}
+
+void loop() {
+  int niveis[5] = {0, 64, 128, 192, 255};
+  for (int i = 0; i < 5; i++) {
+    ledcWrite(PINO_MOTOR, niveis[i]);
+    delay(2000);
+  }
+  ledcWrite(PINO_MOTOR, 0);
+  delay(2000);
+}
+```
+
+Em frequências muito baixas, o motor pode trepidar. Em frequências altas, a comutação do transistor aquece mais. Frequências de 1 a 20 kHz costumam ser um bom compromisso.
+
+</details>
+
+---
+
+### Exercício 4: Controlando o sentido de rotação com a ponte H L293D
+
+**Objetivo:** inverter o sentido de um motor DC usando uma ponte H e controlar sua velocidade com PWM.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), CI L293D (ponte H) ✅ (1), motor DC 5 V ✅ (6), fonte 5 V (LM7805 ✅ (14)), capacitor 100nF ✅ (54) no CI, jumpers.
+
+**Roteiro:**
+
+1. Ligue o pino Vcc1 do L293D ao ESP32 (3,3 V, lógica), e Vcc2 à fonte de 5 V do motor. Ligue os GNDs em comum.
+2. Use IN1 e IN2 para definir o sentido e EN1 para a velocidade, com PWM no EN1.
+3. Gire o motor para a frente por 2 segundos, pare por 1 segundo e gire para trás por 2 segundos.
+
+| IN1 | IN2 | Resultado |
+|-----|-----|-----------|
+| 1 | 0 | Frente |
+| 0 | 1 | Trás |
+| 0 | 0 | Parado |
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int IN1 = 26;
+const int IN2 = 25;
+const int EN1 = 33;   // PWM de velocidade
+
+void frente(int velocidade) {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  ledcWrite(EN1, velocidade);
+}
+
+void tras(int velocidade) {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  ledcWrite(EN1, velocidade);
+}
+
+void parar() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  ledcWrite(EN1, 0);
+}
+
+void setup() {
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  ledcAttach(EN1, 1000, 8);
+}
+
+void loop() {
+  frente(200); delay(2000);
+  parar();     delay(1000);
+  tras(200);   delay(2000);
+  parar();     delay(1000);
+}
+```
+
+Observação: o L293D tem queda de tensão interna de cerca de 1,4 V por canal. Por isso, a tensão efetiva no motor é menor que a da fonte.
+
+</details>
+
+---
+
+### Exercício 5: Comparando a ponte H L298N com a L293D
+
+**Objetivo:** comparar duas pontes H, reconhecer a diferença de corrente, dissipação e pinagem, e escolher a adequada para cada motor.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), módulo ponte H L298N 🛒 (ideal 5), motor DC 5 V ✅ (6), motor DC de tensão não identificada ✅ (7), fonte 12 V 5 A ✅ (2).
+
+**Roteiro:**
+
+1. Monte o mesmo programa do exercício 4 com o L298N. Observe que o módulo tem um regulador de 5 V e jumpers que precisam ser configurados.
+2. Meça a corrente do motor com um multímetro em série (ou um sensor de corrente, como o ACS712 da lista de sensores).
+3. Escreva uma tabela comparando tensão, corrente máxima e necessidade de dissipador entre as duas pontes.
+
+:::tip
+Use o datasheet para comparar a corrente contínua por canal. Motores com corrente de partida alta exigem uma ponte com folga de corrente.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+A L293D fornece cerca de 600 mA contínuos por canal, com queda interna significativa. O L298N suporta até cerca de 2 A por canal, mas também dissipa mais calor e tem queda interna maior. Para motores acima de 1 A, o L298N é a escolha mais segura, com dissipador.
+
+O código é o mesmo do exercício 4, trocando apenas os pinos de controle do módulo. Verifique se os jumpers ENA e ENB estão removidos antes de usar PWM neles.
+
+</details>
+
+---
+
+### Exercício 6: Motor de passo com a ponte H
+
+**Objetivo:** controlar um motor de passo de 5 V em sequência de passos completos e meio-passos.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), motor de passo 5 V ✅ (5), motor de passo CNC 5 V ✅ (2), CI L293D ✅ (1), fonte 5 V (LM7805 ✅ (14)).
+
+**Roteiro:**
+
+1. Identifique as duas bobinas do motor de passo com o multímetro (resistência baixa entre pares de fios).
+2. Ligue cada bobina a uma saída da ponte H, seguindo a sequência de energização.
+3. Gire 200 passos em um sentido e 200 no outro. Compare a sequência de passos completos com a de meio-passos.
+
+:::note
+Motores de passo CNC geralmente são usados com drivers dedicados, como o A4988 ou o DRV8825, que não estão no inventário. Com a ponte H, a corrente é menor e a precisão é limitada. Se for usar o CNC, planeje a compra de um driver.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int BOBINA[4] = {26, 25, 33, 32};
+
+// Sequência de passo completo (dupla fase)
+const uint8_t SEQ[4][4] = {
+  {1,0,1,0},
+  {0,1,1,0},
+  {0,1,0,1},
+  {1,0,0,1}
+};
+
+void passo(int i) {
+  for (int b = 0; b < 4; b++) digitalWrite(BOBINA[b], SEQ[i][b]);
+}
+
+void girar(int passos, int atraso_ms, bool horario) {
+  for (int p = 0; p < passos; p++) {
+    int i = horario ? (p % 4) : (3 - (p % 4));
+    passo(i);
+    delay(atraso_ms);
+  }
+}
+
+void setup() {
+  for (int b = 0; b < 4; b++) pinMode(BOBINA[b], OUTPUT);
+}
+
+void loop() {
+  girar(200, 5, true);
+  delay(500);
+  girar(200, 5, false);
+  delay(500);
+}
+```
+
+Para meio-passos, a sequência tem 8 estados, alternando uma e duas bobinas energizadas. Isso dobra a resolução angular.
+
+</details>
+
+---
+
+### Exercício 7: Gerando um sinal com o temporizador 555
+
+**Objetivo:** montar um oscilador astável com o CI 555 e relacionar frequência e ciclo de trabalho aos valores de R e C.
+
+**Materiais:** CI NE555P ✅ (12), resistores 1kΩ ✅ (199), 10kΩ ✅ (111), 4,7kΩ ✅ (68), capacitor 10uF ✅ (41), capacitor cerâmico 10nF ✅ (6), LED vermelho ✅ (45), ESP32 DEVKIT ✅ (5), osciloscópio ✅ (se disponível).
+
+**Roteiro:**
+
+1. Monte o 555 em modo astável com $R_A = 4{,}7\,\text{k}\Omega$, $R_B = 10\,\text{k}\Omega$ e $C = 10\,\mu\text{F}$.
+2. Calcule a frequência teórica e o ciclo de trabalho.
+3. Ligue a saída (pino 3) a um LED com resistor de 220Ω e meça a frequência com o osciloscópio ou com um pino de entrada do ESP32.
+
+$$f = \frac{1{,}44}{(R_A + 2R_B)\,C} \qquad D = \frac{R_A + R_B}{R_A + 2R_B}$$
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Com os valores acima:
+
+$$f = \frac{1{,}44}{(4{,}7 + 20)\cdot 10^{3} \cdot 10\cdot 10^{-6}} \approx 5{,}8\,\text{Hz}$$
+
+$$D = \frac{4{,}7 + 10}{4{,}7 + 20} \approx 0{,}63$$
+
+Para medir no ESP32, use o programa abaixo, que conta bordas de subida em um pino de entrada por um segundo:
+
+```cpp
+const int PINO_555 = 27;
+volatile unsigned long bordas = 0;
+
+void IRAM_ATTR contar() {
+  bordas++;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_555, INPUT);
+  attachInterrupt(digitalPinToInterrupt(PINO_555), contar, RISING);
+}
+
+void loop() {
+  bordas = 0;
+  delay(1000);
+  Serial.printf("Frequência: %lu Hz\n", bordas);
+}
+```
+
+O ESP32 aceita apenas 3,3 V. O 555 alimentado em 5 V gera saída de 5 V, então use divisor de tensão ou conversor de nível antes do pino de entrada.
+
+</details>
+
+---
+
+### Exercício 8: Controlador PWM TL494
+
+**Objetivo:** entender o papel de um controlador PWM de fonte chaveada e comparar com o PWM gerado pelo ESP32.
+
+**Materiais:** CI TL494CN ✅ (1, ideal 5), resistores e capacitores para o oscilador interno (resistor 10kΩ ✅ (111), capacitor 10nF ✅ (6)), osciloscópio ✅, ESP32 DEVKIT ✅ (5).
+
+**Roteiro:**
+
+1. Estude o diagrama do TL494 e identifique o oscilador (pinos 5 e 6, com RT e CT), os comparadores de erro e as saídas de coletor aberto.
+2. Monte apenas a parte do oscilador e meça a frequência de dente de serra no osciloscópio.
+3. Varie o pino de tempo morto (DTC) e observe como o ciclo máximo é limitado.
+4. Compare essa geração interna de PWM com a do ESP32: a do TL494 é independente do microcontrolador.
+
+:::note
+O TL494 é usado em fontes chaveadas, em que a realimentação de tensão ajusta o ciclo de trabalho. Neste exercício, a montagem é apenas de estudo, sem carga de potência.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+A frequência do oscilador do TL494 é aproximadamente:
+
+$$f_{osc} \approx \frac{1}{R_T \cdot C_T}$$
+
+Por exemplo, com $R_T = 10\,\text{k}\Omega$ e $C_T = 10\,\text{nF}$, $f \approx 10\,\text{kHz}$.
+
+O PWM do ESP32 é programado no software. O do TL494 é definido por hardware e pela comparação com a tensão de referência. Para controlar o TL494 pelo ESP32, é preciso ligar um sinal de controle ao pino de desligamento (pino 4, *dead-time*), o que deve ser feito com isolamento.
+
+</details>
+
+---
+
+### Exercício 9: Driver de gate IRS21844 e meia ponte
+
+**Objetivo:** entender o papel de um driver de gate em circuitos de potência e como ele protege o ESP32 do chaveamento de alta tensão.
+
+**Materiais:** CI IRS21844 (driver de gate) ✅ (3, ideal 5), MOSFET IRF540 🛒 (ideal 5), MOSFET IRF9540N 🛒 (ideal 5), resistores de gate 10Ω ✅ (36), capacitor 100nF ✅ (54), fonte 12 V 5 A ✅ (2), ESP32 DEVKIT ✅ (5), osciloscópio ✅.
+
+**Roteiro:**
+
+1. Estude a folha de dados do IRS21844 e identifique as entradas HIN e LIN, as saídas HO e LO e os pinos de alimentação.
+2. Monte o driver com a alimentação de 12 V e as entradas controladas pelo ESP32, com um deadtime programado.
+3. Com a carga desligada, meça as saídas HO e LO no osciloscópio e confira que elas nunca ficam em nível alto ao mesmo tempo.
+
+:::danger
+Meias pontes e drivers de potência podem gerar sobretensão e curto-circuito de braço. Teste sempre com a carga desligada e com limite de corrente na fonte. Não aumente a tensão além de 12 V sem supervisão.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIN_HIN = 26;   // lado alto
+const int PIN_LIN = 25;   // lado baixo
+const int DEADTIME_MS = 1;
+
+void setup() {
+  pinMode(PIN_HIN, OUTPUT);
+  pinMode(PIN_LIN, OUTPUT);
+  digitalWrite(PIN_HIN, LOW);
+  digitalWrite(PIN_LIN, LOW);
+}
+
+void loop() {
+  // Desliga os dois lados antes de trocar, evitando curto no braço
+  digitalWrite(PIN_LIN, LOW);
+  delay(DEADTIME_MS);
+  digitalWrite(PIN_HIN, HIGH);
+  delay(10);
+  digitalWrite(PIN_HIN, LOW);
+  delay(DEADTIME_MS);
+  digitalWrite(PIN_LIN, HIGH);
+  delay(10);
+  digitalWrite(PIN_LIN, LOW);
+}
+```
+
+O intervalo morto (deadtime) entre os dois lados é o que impede a condução simultânea. Em 1 ms, o período é longo para um driver real, mas é adequado para observação no osciloscópio. Circuitos reais usam deadtime de centenas de nanossegundos e PWM.
+
+</details>
+
+---
+
+### Exercício 10: Controlando um LED de potência com MOSFET
+
+**Objetivo:** usar um MOSFET de canal N como chave de potência para dimerizar uma fita de LEDs de 12 V.
+
+**Materiais:** MOSFET 2N7000 🛒 (ideal 10), MOSFET IRF540 🛒 (ideal 5), fonte 12 V 5 A ✅ (2), fita de LEDs 12 V (use um LED de potência ou carga de 12 V equivalente), resistor de gate 100Ω ✅ (91), resistor de pull-down 10kΩ ✅ (111), ESP32 DEVKIT ✅ (5).
+
+**Roteiro:**
+
+1. Ligue o gate ao pino 26 pelo resistor de 100Ω e coloque o pull-down de 10kΩ entre gate e source.
+2. Ligue a carga entre 12 V e o dreno. Source no GND comum.
+3. Varie o duty cycle de 0 a 100% em PWM de 1 kHz e observe a variação de brilho.
+
+:::note
+O 2N7000 é adequado para cargas pequenas, com corrente de até 200 mA. Para cargas maiores, use o IRF540, que suporta corrente bem maior. Confira sempre a tensão de limiar (`V_GS`) no datasheet.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PIN_GATE = 26;
+
+void setup() {
+  ledcAttach(PIN_GATE, 1000, 8);
+}
+
+void loop() {
+  for (int d = 0; d <= 255; d += 5) {
+    ledcWrite(PIN_GATE, d);
+    delay(40);
+  }
+  for (int d = 255; d >= 0; d -= 5) {
+    ledcWrite(PIN_GATE, d);
+    delay(40);
+  }
+}
+```
+
+Os MOSFETs de canal N são acionados quando `V_GS` é positivo. Como a saída do ESP32 é de 3,3 V, verifique se o limiar do MOSFET permite condução plena com esse nível. O IRF540 exige mais tensão de gate que o 2N7000, e pode não saturar completamente com 3,3 V.
+
+</details>
+
+---
+
+### Exercício 11: Comparando MOSFET e IGBT na prática
+
+**Objetivo:** comparar dispositivos de chaveamento de potência em critérios de tensão, corrente, perdas e aplicação.
+
+**Materiais:** MOSFET IRF9540N 🛒 (ideal 5), MOSFET BS250 🛒 (ideal 10), IGBT G4PC50 🛒 (ideal 0), IRF540 🛒 (ideal 5), TRIAC BT137 ✅ (1), transistor TIP31 ✅ (3), multímetro, datasheets.
+
+**Roteiro:**
+
+1. Compare, em tabela, a tensão máxima, a corrente máxima e a resistência de condução (`R_DS(on)`) ou a tensão de saturação (`V_CE(sat)`) de cada componente.
+2. Identifique quais são de canal N e quais são de canal P, e qual é o sentido de acionamento de cada um.
+3. Escolha qual dispositivo usaria para um motor de 12 V e 3 A, e justifique.
+
+:::tip
+Para escolher um MOSFET, verifique a tensão de dreno-source, a corrente contínua e a resistência de condução. Menor `R_DS(on)` significa menos perda na condução.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Resposta esperada para um motor de 12 V e 3 A: um MOSFET de canal N, como o IRF540, com resistência de condução baixa e tensão de dreno adequada. O IRF540 é tipicamente usado com carga no dreno e source no GND, o que simplifica o acionamento a partir de um microcontrolador.
+
+Os MOSFETs de canal P (IRF9540N e BS250) são usados no lado alto de uma carga, com source em 12 V. Já o IGBT é usado em aplicações de alta tensão e corrente, como inversores, e exige um driver mais robusto.
+
+</details>
+
+---
+
+### Exercício 12: Controle de carga AC com TRIAC e relé de estado sólido
+
+**Objetivo:** entender como cargas de rede elétrica são chaveadas com TRIAC e relé de estado sólido, e por que isso exige isolamento.
+
+**Materiais:** TRIAC BT137 ✅ (1), relé de estado sólido SSR-25DA 🛒 (ideal 5), opto acoplador 4N27 ✅ (2) ou PC817 🛒 (ideal 10), resistor 330Ω ✅ (60), ESP32 DEVKIT ✅ (5), osciloscópio ✅.
+
+**Roteiro:**
+
+1. Estude o princípio de funcionamento do TRIAC e a diferença entre o acionamento por pulso e o cruzamento por zero do SSR.
+2. Use o opto acoplador 4N27 para isolar o pino do ESP32 do circuito de potência. Calcule o resistor do LED interno.
+3. **Sem conectar à rede elétrica**, simule a carga com uma lâmpada de 12 V alimentada por fonte de bancada, e acione-a com o SSR no lado de baixa tensão.
+
+:::danger
+Este exercício é de **estudo teórico e simulação em baixa tensão**. Nunca conecte um TRIAC ou um SSR à rede de 127 V ou 220 V sem supervisão de um professor ou técnico habilitado. Sempre desligue a rede antes de mexer no circuito e use isolamento adequado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+O opto acoplador isola eletricamente o ESP32 do circuito de potência, pois a comunicação é feita por luz, sem ligação elétrica direta.
+
+Cálculo do resistor do LED do 4N27, com corrente de 10 mA e tensão de 3,3 V e queda de 1,2 V:
+
+$$R = \frac{3{,}3 - 1{,}2}{0{,}010} = 210\,\Omega \approx 220\,\Omega$$
+
+```cpp
+const int PIN_OPTO = 26;
+
+void setup() {
+  pinMode(PIN_OPTO, OUTPUT);
+  digitalWrite(PIN_OPTO, LOW);
+}
+
+void loop() {
+  digitalWrite(PIN_OPTO, HIGH);   // aciona o opto e, em seguida, o SSR/TRIAC
+  delay(2000);
+  digitalWrite(PIN_OPTO, LOW);
+  delay(2000);
+}
+```
+
+O SSR com cruzamento por zero só conduz quando a tensão da rede passa por zero, o que reduz interferência eletromagnética. Por isso, o controle é feito em ciclos da rede, não instantaneamente.
+
+</details>
+
+---
+
+### Exercício 13: Reguladores de tensão e conversores DC-DC
+
+**Objetivo:** alimentar o ESP32 e sensores a partir de uma bateria ou fonte de 12 V, escolhendo entre regulador linear e conversor chaveado.
+
+**Materiais:** regulador LM7805 ✅ (14), regulador ajustável LM317 🛒 (ideal 5), conversor DC-DC ✅ (5), conversor step-up MT3608 ✅ (2), capacitores 100uF ✅ (29) e 100nF ✅ (54), resistor 220Ω ✅ (127) e potenciômetro linear B1KΩ ✅ (2) para ajuste e 1kΩ ✅ (199), multímetro, fonte 12 V 5 A ✅ (2), bateria 9V ✅ (12).
+
+**Roteiro:**
+
+1. Monte o LM7805 com entrada de 12 V e capacitores de entrada e saída. Meça a saída em vazio e com carga de 100Ω.
+2. Monte o LM317 como regulador ajustável, com R1 = 220Ω fixo e R2 formado pelo potenciômetro de 1kΩ, ajustado para 5 V. Use a fórmula $V_{out} = 1{,}25\,(1 + R_2/R_1)$.
+3. Compare o aquecimento do LM7805 com o do conversor DC-DC para a mesma carga.
+4. Use o MT3608 para elevar uma bateria de 3,7 V para 5 V e meça o rendimento.
+
+:::warning
+Reguladores lineares dissipam a diferença de tensão como calor. Com 12 V de entrada e 5 V de saída, o LM7805 dissipa 7 V vezes a corrente. Verifique a temperatura antes de aumentar a carga.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Potência dissipada no LM7805: $P = (V_{in} - V_{out}) \cdot I = (12 - 5) \cdot I$. Com 500 mA, $P = 3{,}5\,\text{W}$, o que exige dissipador.
+
+Ajuste do LM317: com $R_1 = 220\,\Omega$, $V_{out} = 5$ V resulta em $R_2 = 220 \cdot (5/1{,}25 - 1) = 660\,\Omega$. Gire o potenciômetro de 1kΩ até medir 5 V na saída.
+
+O conversor DC-DC e o MT3608 são chaveados, e dissipam bem menos calor. Em contrapartida, geram ruído de chaveamento, que deve ser filtrado com capacitores próximos à carga.
+
+</details>
+
+---
+
+### Exercício 14: Filtro RC para converter PWM em tensão
+
+**Objetivo:** transformar um sinal PWM em uma tensão média estável, usando um filtro passa-baixas, e entender o compromisso entre ondulação e tempo de resposta.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), resistor 10kΩ ✅ (111), capacitor eletrolítico 10uF ✅ (41), multímetro ✅, osciloscópio ✅ (se disponível), amplificador operacional LM358 ✅ (3) opcional para um seguidor de tensão.
+
+**Roteiro:**
+
+1. Gere PWM de 5 kHz no pino 26, com 50% de duty.
+2. Monte o filtro RC: pino 26 → resistor 10kΩ → ponto de saída, com capacitor de 10uF do ponto de saída ao GND.
+3. Meça a tensão de saída com o multímetro. Ela deve ser próxima de 1,65 V, metade de 3,3 V.
+4. Varie o duty e confira a relação linear entre duty e tensão média.
+5. Adicione um seguidor de tensão com o LM358 para evitar que a carga altere o filtro.
+
+$$f_c = \frac{1}{2\pi R C} \qquad V_{média} = D \cdot V_{cc}$$
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Frequência de corte com $R = 10\,\text{k}\Omega$ e $C = 10\,\mu\text{F}$:
+
+$$f_c = \frac{1}{2\pi \cdot 10\cdot 10^{3} \cdot 10\cdot 10^{-6}} \approx 1{,}6\,\text{Hz}$$
+
+Como o PWM está em 5 kHz, muito acima da frequência de corte, a ondulação é pequena. O filtro atua como média e a tensão de saída é aproximadamente $D \cdot V_{cc}$.
+
+O seguidor de tensão com amplificador operacional tem ganho unitário e alta impedância de entrada, o que impede que a carga interfira no filtro. Monte com o LM358 alimentado pelo 3,3 V do ESP32 ou por uma fonte de 5 V, conforme a folha de dados.
+
+</details>

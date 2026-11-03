@@ -1,11 +1,709 @@
 ---
-slug: /programacao-hardware/rtos
+id: exercicios-rtos
+title: Exercícios - RTOS
+sidebar_label: 6. RTOS
+sidebar_position: 6
+description: Lista de exercícios sobre sistemas operacionais de tempo real com FreeRTOS no ESP32, com tarefas, prioridades, filas, mutex, notificações, event groups, timers e uso dos dois núcleos.
 ---
 
-# RTOS
+Esta lista tem **11 exercícios** sobre FreeRTOS no ESP32. O ESP32 traz o FreeRTOS embutido no Arduino Core, e cada tarefa roda como um fluxo independente, com prioridade própria e comunicação por filas e semáforos.
 
-Exercícios sobre tarefas, prioridades e sincronização em sistemas operacionais de tempo real.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+- **ESP32 DEVKIT** (estoque: 5) e cabo USB
+- **Arduino IDE** ou **PlatformIO** com o pacote *esp32 by Espressif* (versão 3.x). O FreeRTOS já vem incluído.
+- **Biblioteca OneWire** e **DallasTemperature**, para o exercício 4
+- **Biblioteca DHT sensor library** (Adafruit), para os exercícios 3, 6 e 10
+- Protoboard, jumpers, LEDs, resistores e botões
 
-Adicione aqui os exercícios deste submódulo.
+:::note
+**Legenda de estoque.** ✅ indica que o item já está no laboratório, com a quantidade entre parênteses. 🛒 indica que ainda precisa ser comprado.
+:::
+
+:::tip
+No ESP32, o `loop()` do Arduino roda como uma tarefa FreeRTOS de prioridade 1 no núcleo 1. Todas as tarefas que você criar competem com ela, por isso prioridades importam.
+:::
+
+:::warning
+Nunca use `delay()` em um laço de tarefa sem `vTaskDelay()` ou alguma espera que ceda o processador. Uma tarefa de prioridade alta que não cede impede as demais de rodar. Use `pdMS_TO_TICKS()` para converter milissegundos em ticks.
+:::
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Primeiras tarefas paralelas
+
+**Objetivo:** criar duas tarefas independentes que piscam dois LEDs em ritmos diferentes.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), LED vermelho ✅ (45), LED verde ✅ (40), resistores 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Crie uma função de tarefa para cada LED. Cada uma tem um laço infinito com `vTaskDelay()`.
+2. Crie as tarefas com `xTaskCreatePinnedToCore()`, usando o núcleo 1 para ambas.
+3. Observe que os LEDs piscam ao mesmo tempo, sem que o `loop()` precise fazer nada.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+void tarefaLed(void *param) {
+  int pino = (int)param;
+  pinMode(pino, OUTPUT);
+  for (;;) {
+    digitalWrite(pino, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(500));
+    digitalWrite(pino, LOW);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+
+void setup() {
+  xTaskCreatePinnedToCore(tarefaLed, "LED1", 2048, (void *)26, 1, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaLed, "LED2", 2048, (void *)27, 1, NULL, 1);
+}
+
+void loop() {
+  // Nada aqui: o loop() pode ficar vazio, ou ser usado para outra tarefa
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+Cada tarefa tem sua própria pilha, definida no terceiro parâmetro de `xTaskCreatePinnedToCore()`, em bytes. Pilhas pequenas demais causam travamentos difíceis de depurar.
+
+</details>
+
+---
+
+### Exercício 2: Prioridades entre tarefas
+
+**Objetivo:** observar como uma tarefa de maior prioridade é executada primeiro, e como `vTaskDelay()` libera o processador para as demais.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), botão sem retenção ✅ (55), LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Crie uma tarefa de alta prioridade (3) que lê o botão e acende o LED quando pressionado.
+2. Crie uma tarefa de baixa prioridade (1) que imprime uma mensagem no monitor serial a cada segundo.
+3. Teste sem `vTaskDelay()` na tarefa de alta prioridade e observe o efeito. Depois, volte a incluí-lo.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_BOTAO = 4;
+const int PINO_LED = 26;
+
+void tarefaBotao(void *param) {
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_LED, OUTPUT);
+  for (;;) {
+    digitalWrite(PINO_LED, digitalRead(PINO_BOTAO) == LOW);
+    vTaskDelay(pdMS_TO_TICKS(20));     // cede o processador
+  }
+}
+
+void tarefaLog(void *param) {
+  for (;;) {
+    Serial.println("tarefa de log");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  xTaskCreatePinnedToCore(tarefaBotao, "Botao", 2048, NULL, 3, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaLog, "Log", 2048, NULL, 1, NULL, 1);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+Sem o `vTaskDelay()` na tarefa do botão, ela nunca cederia o núcleo, e a tarefa de log não imprimiria nada. Esse é o principal erro ao começar com RTOS.
+
+</details>
+
+---
+
+### Exercício 3: Enviando dados de um sensor com fila
+
+**Objetivo:** transferir leituras de uma tarefa produtora para uma tarefa consumidora usando uma fila.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor DHT11 ✅ (11), resistor 10kΩ ✅ (111) (pull-up, se o módulo não tiver).
+
+**Roteiro:**
+
+1. A tarefa produtora lê o DHT11 a cada 2 segundos e envia a temperatura para uma fila.
+2. A tarefa consumidora espera na fila e imprime o valor recebido.
+3. Observe que a consumidora fica bloqueada, sem gastar processador, até chegar uma nova leitura.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <DHT.h>
+
+DHT dht(15, DHT11);
+QueueHandle_t filaTemperatura;
+
+void tarefaSensor(void *param) {
+  dht.begin();
+  for (;;) {
+    float t = dht.readTemperature();
+    if (!isnan(t)) {
+      xQueueSend(filaTemperatura, &t, 0);
+    }
+    vTaskDelay(pdMS_TO_TICKS(2000));
+  }
+}
+
+void tarefaConsumidora(void *param) {
+  float t;
+  for (;;) {
+    if (xQueueReceive(filaTemperatura, &t, portMAX_DELAY) == pdTRUE) {
+      Serial.printf("Temperatura recebida: %.1f C\n", t);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  filaTemperatura = xQueueCreate(5, sizeof(float));
+  xTaskCreatePinnedToCore(tarefaSensor, "Sensor", 4096, NULL, 2, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaConsumidora, "Consumidora", 4096, NULL, 1, NULL, 1);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+`portMAX_DELAY` faz a tarefa esperar indefinidamente pelo dado. Em sistemas reais, use um tempo limite para detectar falhas no produtor.
+
+</details>
+
+---
+
+### Exercício 4: Compartilhando o monitor serial com mutex
+
+**Objetivo:** evitar que duas tarefas escrevam ao mesmo tempo no monitor serial, o que mistura as mensagens.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor DS18B20 ✅ (1, ideal 5), sensor HC-SR04 ✅ (8, ideal 5), resistor 4,7kΩ ✅ (68) (pull-up do DS18B20), divisor de tensão para o ECHO (1kΩ ✅ (199) e 2kΩ ✅ (19)).
+
+**Roteiro:**
+
+1. Crie uma tarefa que lê a temperatura do DS18B20 a cada segundo.
+2. Crie outra tarefa que mede a distância com o HC-SR04 a cada 500 ms.
+3. Proteja a impressão no serial com um mutex. Cada tarefa só imprime com o mutex obtido.
+4. Teste sem o mutex e compare com a versão protegida.
+
+:::danger
+O pino ECHO do HC-SR04 sai em 5 V. Use o divisor de tensão antes do pino do ESP32.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+const int PIN_DS = 15;
+const int PIN_TRIG = 23, PIN_ECHO = 19;
+
+OneWire barramento(PIN_DS);
+DallasTemperature ds(&barramento);
+SemaphoreHandle_t mutexSerial;
+
+void imprimir(const char *msg) {
+  xSemaphoreTake(mutexSerial, portMAX_DELAY);
+  Serial.println(msg);
+  xSemaphoreGive(mutexSerial);
+}
+
+void tarefaTemperatura(void *param) {
+  ds.begin();
+  for (;;) {
+    ds.requestTemperatures();
+    char buf[48];
+    snprintf(buf, sizeof(buf), "Temp: %.2f C", ds.getTempCByIndex(0));
+    imprimir(buf);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
+void tarefaDistancia(void *param) {
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
+  for (;;) {
+    digitalWrite(PIN_TRIG, LOW);
+    delayMicroseconds(2);
+    digitalWrite(PIN_TRIG, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(PIN_TRIG, LOW);
+    long duracao = pulseIn(PIN_ECHO, HIGH, 30000);   // bloqueia só esta tarefa
+    float cm = duracao * 0.0343 / 2.0;
+    char buf[48];
+    snprintf(buf, sizeof(buf), "Distancia: %.1f cm", cm);
+    imprimir(buf);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  mutexSerial = xSemaphoreCreateMutex();
+  xTaskCreatePinnedToCore(tarefaTemperatura, "Temp", 4096, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaDistancia, "Dist", 4096, NULL, 1, NULL, 1);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+Note que `pulseIn()` bloqueia a tarefa, e não o sistema inteiro. Esse é um dos benefícios de RTOS: uma espera longa em uma tarefa não impede as outras.
+
+</details>
+
+---
+
+### Exercício 5: Notificando uma tarefa a partir de uma interrupção
+
+**Objetivo:** acordar uma tarefa diretamente de uma ISR, sem usar polling no `loop()`.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), botão sem retenção ✅ (55), LED verde ✅ (40), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Crie uma tarefa que espera uma notificação com `ulTaskNotifyTake()`.
+2. Na ISR do botão, envie a notificação com `vTaskNotifyGiveFromISR()`.
+3. Ao receber a notificação, a tarefa acende o LED por 500 ms.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_BOTAO = 4;
+const int PINO_LED = 26;
+TaskHandle_t handleTarefa;
+
+void IRAM_ATTR aoPressionar() {
+  BaseType_t prioridade = pdFALSE;
+  vTaskNotifyGiveFromISR(handleTarefa, &prioridade);
+  portYIELD_FROM_ISR(prioridade);
+}
+
+void tarefaLed(void *param) {
+  pinMode(PINO_LED, OUTPUT);
+  for (;;) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);   // espera a notificação
+    digitalWrite(PINO_LED, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(500));
+    digitalWrite(PINO_LED, LOW);
+  }
+}
+
+void setup() {
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  xTaskCreatePinnedToCore(tarefaLed, "LED", 2048, NULL, 2, &handleTarefa, 1);
+  attachInterrupt(digitalPinToInterrupt(PINO_BOTAO), aoPressionar, FALLING);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+`portYIELD_FROM_ISR()` pede a troca de contexto quando a tarefa acordada tem prioridade maior que a que estava rodando. Sem isso, a resposta pode atrasar.
+
+</details>
+
+---
+
+### Exercício 6: Sincronizando leituras com event groups
+
+**Objetivo:** esperar que duas leituras independentes estejam prontas antes de exibir o resultado combinado, usando um event group.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor DHT11 ✅ (11), sensor HC-SR04 ✅ (8, ideal 5), divisor de tensão para o ECHO (1kΩ ✅ (199) e 2kΩ ✅ (19)).
+
+**Roteiro:**
+
+1. Crie um event group com dois bits: um para "temperatura pronta" e outro para "distância pronta".
+2. Cada tarefa de sensor grava seu valor em uma variável global e ativa o seu bit.
+3. Uma tarefa de exibição espera pelos dois bits e então imprime os dois valores juntos.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <DHT.h>
+
+#define BIT_TEMP (1 << 0)
+#define BIT_DIST (1 << 1)
+
+EventGroupHandle_t eventos;
+float temperatura = 0, distancia = 0;
+DHT dht(15, DHT11);
+
+void tarefaTemp(void *param) {
+  dht.begin();
+  for (;;) {
+    temperatura = dht.readTemperature();
+    xEventGroupSetBits(eventos, BIT_TEMP);
+    vTaskDelay(pdMS_TO_TICKS(2000));
+  }
+}
+
+void tarefaDist(void *param) {
+  pinMode(23, OUTPUT); pinMode(19, INPUT);
+  for (;;) {
+    digitalWrite(23, LOW); delayMicroseconds(2);
+    digitalWrite(23, HIGH); delayMicroseconds(10);
+    digitalWrite(23, LOW);
+    distancia = pulseIn(19, HIGH, 30000) * 0.0343 / 2.0;
+    xEventGroupSetBits(eventos, BIT_DIST);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
+void tarefaExibicao(void *param) {
+  for (;;) {
+    xEventGroupWaitBits(eventos, BIT_TEMP | BIT_DIST, pdTRUE, pdTRUE, portMAX_DELAY);
+    Serial.printf("T=%.1f C  D=%.1f cm\n", temperatura, distancia);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  eventos = xEventGroupCreate();
+  xTaskCreatePinnedToCore(tarefaTemp, "Temp", 4096, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaDist, "Dist", 4096, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaExibicao, "Exib", 4096, NULL, 1, NULL, 1);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+Os parâmetros `pdTRUE, pdTRUE` de `xEventGroupWaitBits()` fazem o Event Group limpar os bits e esperar por **todos** eles. Com `pdFALSE`, bastaria um dos bits.
+
+</details>
+
+---
+
+### Exercício 7: Temporizadores de software para padrões de buzzer
+
+**Objetivo:** usar temporizadores de software do FreeRTOS para tocar padrões sonoros sem ocupar uma tarefa inteira.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), buzzer ativo ✅ (8), transistor BC547 ✅ (21), resistor 1kΩ ✅ (199).
+
+**Roteiro:**
+
+1. Crie um timer de software que alterna o buzzer a cada 200 ms.
+2. Inicie o timer ao pressionar um comando no monitor serial (`s` para iniciar e `p` para parar).
+3. Observe que o timer é executado em uma tarefa interna do FreeRTOS, e não consome uma tarefa sua.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_BUZZER = 26;
+TimerHandle_t timerBuzzer;
+bool estado = false;
+
+void aoAlternar(TimerHandle_t xTimer) {
+  estado = !estado;
+  digitalWrite(PINO_BUZZER, estado);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PINO_BUZZER, OUTPUT);
+  timerBuzzer = xTimerCreate("Buzzer", pdMS_TO_TICKS(200), pdTRUE, NULL, aoAlternar);
+}
+
+void loop() {
+  if (Serial.available()) {
+    char c = Serial.read();
+    if (c == 's') xTimerStart(timerBuzzer, 0);
+    if (c == 'p') {
+      xTimerStop(timerBuzzer, 0);
+      digitalWrite(PINO_BUZZER, LOW);
+    }
+  }
+  vTaskDelay(pdMS_TO_TICKS(50));
+}
+```
+
+Callbacks de timer de software não devem bloquear nem chamar funções longas, pois são executados em sequência com outros timers.
+
+</details>
+
+---
+
+### Exercício 8: Distribuindo tarefas nos dois núcleos
+
+**Objetivo:** executar tarefas de sensores em núcleos diferentes e entender o papel de cada núcleo no ESP32.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor de luminosidade LDR grande ✅ (22), sensor de cor TCS3200 ✅ (3), resistor 10kΩ ✅ (111) para o divisor do LDR, LED vermelho ✅ (45), resistor 220Ω ✅ (127).
+
+**Roteiro:**
+
+1. Crie uma tarefa para o LDR no núcleo 0 e outra para o TCS3200 no núcleo 1.
+2. Imprima no monitor serial o número do núcleo em que cada tarefa roda, com `xPortGetCoreID()`.
+3. Compare as leituras e observe que a execução é paralela.
+
+:::note
+No ESP32, o núcleo 0 costuma ser usado pela pilha de WiFi e Bluetooth. Colocar tarefas de tempo real nele pode afetar a conexão. Confira o uso do núcleo antes de decidir.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int PINO_LDR = 34;           // entrada analógica
+const int PINO_S0 = 25, PINO_S1 = 26, PINO_S2 = 27, PINO_S3 = 14, PINO_OUT = 32;
+
+void tarefaLuz(void *param) {
+  for (;;) {
+    int luz = analogRead(PINO_LDR);
+    Serial.printf("[core %d] LDR=%d\n", xPortGetCoreID(), luz);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+
+void tarefaCor(void *param) {
+  pinMode(PINO_S0, OUTPUT); pinMode(PINO_S1, OUTPUT);
+  pinMode(PINO_S2, OUTPUT); pinMode(PINO_S3, OUTPUT);
+  pinMode(PINO_OUT, INPUT);
+  digitalWrite(PINO_S0, HIGH); digitalWrite(PINO_S1, LOW);   // escala 20%
+  for (;;) {
+    digitalWrite(PINO_S2, LOW); digitalWrite(PINO_S3, LOW);   // filtro vermelho
+    long vermelho = pulseIn(PINO_OUT, LOW, 50000);
+    Serial.printf("[core %d] TCS vermelho=%ld\n", xPortGetCoreID(), vermelho);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  xTaskCreatePinnedToCore(tarefaLuz, "Luz", 4096, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(tarefaCor, "Cor", 4096, NULL, 1, NULL, 1);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+O TCS3200 mede a frequência de saída para cada filtro de cor. Este gabarito lê apenas o filtro vermelho, como demonstração. Para calibrar cores, leia os três filtros (vermelho, verde e azul) e compare com referências.
+
+</details>
+
+---
+
+### Exercício 9: Robô com sensor de distância e controle de motor em tarefas separadas
+
+**Objetivo:** dividir um robô simples em duas tarefas: uma lê o sensor, a outra controla o motor, comunicando-se por fila.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor HC-SR04 ✅ (8, ideal 5), divisor de tensão para o ECHO (1kΩ ✅ (199) e 2kΩ ✅ (19)), motor DC 5 V ✅ (6), ponte H L293D ✅ (1), fonte 5 V (LM7805 ✅ (14)).
+
+**Roteiro:**
+
+1. A tarefa do sensor mede a distância a cada 100 ms e envia o valor para uma fila.
+2. A tarefa de controle recebe a distância e liga o motor para a frente se houver espaço, ou para se o obstáculo estiver a menos de 15 cm.
+3. Teste aproximando a mão do sensor e observe a parada do motor.
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+const int TRIG = 23, ECHO = 19;
+const int IN1 = 26, IN2 = 25, EN = 33;   // ponte H
+QueueHandle_t filaDistancia;
+
+void tarefaSensor(void *param) {
+  pinMode(TRIG, OUTPUT); pinMode(ECHO, INPUT);
+  for (;;) {
+    digitalWrite(TRIG, LOW); delayMicroseconds(2);
+    digitalWrite(TRIG, HIGH); delayMicroseconds(10);
+    digitalWrite(TRIG, LOW);
+    float cm = pulseIn(ECHO, HIGH, 30000) * 0.0343 / 2.0;
+    xQueueOverwrite(filaDistancia, &cm);   // mantém só a leitura mais recente
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
+void tarefaControle(void *param) {
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  ledcAttach(EN, 1000, 8);
+  float cm = 100;
+  for (;;) {
+    xQueuePeek(filaDistancia, &cm, 0);   // lê sem remover
+    if (cm < 15) {
+      digitalWrite(IN1, LOW); digitalWrite(IN2, LOW); ledcWrite(EN, 0);
+    } else {
+      digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW); ledcWrite(EN, 180);
+    }
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  filaDistancia = xQueueCreate(1, sizeof(float));
+  xTaskCreatePinnedToCore(tarefaSensor, "Sensor", 4096, NULL, 2, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaControle, "Controle", 4096, NULL, 2, NULL, 1);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+`xQueueOverwrite()` com fila de tamanho 1 mantém sempre o valor mais recente, o que é útil para dados de sensores em que só a última leitura importa.
+
+</details>
+
+---
+
+### Exercício 10: Sistema integrado com sensores, atuador e monitoramento
+
+**Objetivo:** integrar várias tarefas em um sistema completo: leitura de dois sensores, decisão, atuação e monitoramento de falhas.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), sensor DHT11 ✅ (11), sensor LDR pequeno ✅ (29), relé 5 V 🛒 (ideal 5), transistor BC548 ✅ (9), diodo 1N4007 ✅ (41), resistor 1kΩ ✅ (199), LED verde ✅ (40).
+
+**Roteiro:**
+
+1. Tarefa de sensores: lê DHT11 e LDR a cada 2 segundos e publica os valores em uma estrutura compartilhada, protegida por mutex.
+2. Tarefa de decisão: liga o relé (ventilador ou luz) se a temperatura passar de 28 °C ou se estiver escuro.
+3. Tarefa de monitoramento: a cada 5 segundos, verifica se a leitura de sensores foi atualizada. Se não foi, acende o LED de falha.
+
+:::note
+O relé deve ser acionado por transistor e diodo, como no exercício 15 do submódulo de GPIOs Digitais. Não ligue cargas de rede elétrica sem supervisão.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```cpp
+#include <DHT.h>
+
+struct Leitura { float temp; int luz; unsigned long quando; };
+Leitura atual = {0, 0, 0};
+SemaphoreHandle_t mutex;
+DHT dht(15, DHT11);
+const int PIN_RELE = 26, PIN_LED_FALHA = 25;
+
+void tarefaSensores(void *p) {
+  dht.begin();
+  for (;;) {
+    Leitura nova;
+    nova.temp = dht.readTemperature();
+    nova.luz = analogRead(34);
+    nova.quando = millis();
+    if (!isnan(nova.temp)) {
+      xSemaphoreTake(mutex, portMAX_DELAY);
+      atual = nova;
+      xSemaphoreGive(mutex);
+    }
+    vTaskDelay(pdMS_TO_TICKS(2000));
+  }
+}
+
+void tarefaDecisao(void *p) {
+  pinMode(PIN_RELE, OUTPUT);
+  for (;;) {
+    Leitura copia;
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    copia = atual;
+    xSemaphoreGive(mutex);
+
+    bool ligar = (copia.temp > 28.0) || (copia.luz < 1000);
+    digitalWrite(PIN_RELE, ligar);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+
+void tarefaMonitor(void *p) {
+  pinMode(PIN_LED_FALHA, OUTPUT);
+  for (;;) {
+    Leitura copia;
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    copia = atual;
+    xSemaphoreGive(mutex);
+
+    bool falha = (millis() - copia.quando > 5000);
+    digitalWrite(PIN_LED_FALHA, falha);
+    vTaskDelay(pdMS_TO_TICKS(5000));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  mutex = xSemaphoreCreateMutex();
+  xTaskCreatePinnedToCore(tarefaSensores, "Sens", 4096, NULL, 2, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaDecisao, "Decis", 4096, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(tarefaMonitor, "Monit", 4096, NULL, 1, NULL, 1);
+}
+
+void loop() {
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+Este exemplo usa uma cópia da estrutura dentro do mutex, o que mantém a seção crítica curta. Esse é o padrão recomendado: copie os dados protegidos e trabalhe com a cópia fora do mutex.
+
+</details>
+
+---
+
+### Exercício 11: Ferramentas de depuração e o gravador ST-LINK
+
+**Objetivo:** entender quais ferramentas de depuração servem a cada microcontrolador, e por que o ST-LINK do inventário não serve ao ESP32.
+
+**Materiais:** ESP32 DEVKIT ✅ (5), gravador ST/LINK ✅ (1), cabo USB, monitor serial, datasheets do ESP32 e do STM32.
+
+**Roteiro:**
+
+1. Pesquise no datasheet do ST-LINK para quais famílias de microcontroladores ele é indicado. Anote a resposta.
+2. Conecte o ESP32 pela porta USB e identifique o chip de comunicação serial na placa (geralmente CP2102 ou CH340). Esse chip é o que permite gravar e ver o monitor serial.
+3. Pesquise qual ferramenta de depuração por JTAG é usada com o ESP32 (ESP-PROG é uma opção). Compare com o ST-LINK em termos de compatibilidade.
+4. Use `Serial.printf()` com níveis de log (informação, aviso e erro) em um programa simples para depurar sem ferramenta externa.
+
+:::note
+O ST-LINK é um gravador e depurador para microcontroladores STM32. Ele não grava nem depura o ESP32, que usa a porta USB, pela interface serial de bootloader, ou JTAG com hardware específico. Este exercício é de pesquisa, e a resposta deve ser justificada com o datasheet.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+Resposta esperada:
+
+- O **ST-LINK** é usado com STM32 e não é compatível com o ESP32.
+- O **ESP32** grava pela porta USB, por meio de um chip conversor serial (CP2102 ou CH340), e a IDE do Arduino cuida da gravação.
+- Para depuração avançada com pontos de parada, o ESP32 usa JTAG, com ferramentas como o ESP-PROG.
+
+Exemplo de depuração com níveis de log:
+
+```cpp
+#define LOG_INFO(msg)  Serial.printf("[INFO] %s\n", msg)
+#define LOG_ERRO(msg)  Serial.printf("[ERRO] %s\n", msg)
+
+void setup() {
+  Serial.begin(115200);
+  LOG_INFO("Sistema iniciado");
+  if (ESP.getFreeHeap() < 100000) LOG_ERRO("Memória livre baixa");
+}
+
+void loop() {
+  LOG_INFO("Operando normalmente");
+  delay(2000);
+}
+```
+
+</details>
+

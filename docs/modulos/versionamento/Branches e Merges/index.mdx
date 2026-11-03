@@ -1,11 +1,847 @@
 ---
-slug: /versionamento/branches-e-merges
+id: branches-merges
+title: Branches e Merges
+sidebar_label: 2. Branches e Merges
+sidebar_position: 2
+description: Dezesseis exercícios sobre branches no Git, incluindo merge, conflitos, stash, cherry-pick, rebase, comparação de branches e HEAD destacado, com arquivos em C.
 ---
 
-# Branches e Merges
+Esta lista tem **16 exercícios** sobre ramificações (branches) e integração de código. A progressão vai de criar e alternar branches até resolver conflitos em cenários com várias ramificações em paralelo, passando por stash, cherry-pick e rebase interativo.
 
-Exercícios sobre criação de branches e integração de alterações com merges.
+Todos os exercícios trabalham com arquivos `.c`.
 
-## Exercícios
+## 🛠 Requisitos e Materiais
 
-Adicione aqui os exercícios deste submódulo.
+- **Git** instalado (verifique com `git --version`)
+- **Compilador C** (`gcc` ou `clang`)
+- **Terminal** (Bash, PowerShell ou Git Bash)
+- **Editor de código**, como VS Code
+- Conhecimento dos comandos básicos: `add`, `commit`, `status` e `log`
+
+:::note
+Crie uma pasta separada para estes exercícios (por exemplo, `exercicios-branches`). Cada exercício usa uma subpasta própria, quando indicado.
+:::
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Criando, listando e apontando branches
+
+**Objetivo:** criar branches, listá-las e entender que cada uma é apenas um ponteiro para um commit.
+
+**Passos:**
+
+1. Crie a pasta `ex01-branches` com `git init`.
+2. Crie `saudacao.c` com o código abaixo e faça o commit `feat: adiciona saudação`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Olá, mundo!\n");
+    return 0;
+}
+```
+
+3. Liste as branches com `git branch`. Você deve ver apenas `main` (ou `master`).
+4. Crie a branch `feature/nome` com `git branch feature/nome`.
+5. Liste novamente com `git branch -a` e observe o asterisco (`*`) indicando a branch atual.
+6. Use `git log --oneline --decorate` para ver que `main` e `feature/nome` apontam para o mesmo commit.
+
+:::tip
+Branches são apenas ponteiros leves para commits. Criar uma branch não copia arquivos, por isso é uma operação rápida.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex01-branches
+cd ex01-branches
+git init
+
+# crie saudacao.c
+git add saudacao.c
+git commit -m "feat: adiciona saudação"
+
+git branch                    # * main
+git branch feature/nome
+git branch -a                 # * main / feature/nome
+git log --oneline --decorate  # main e feature/nome no mesmo commit
+```
+
+</details>
+
+---
+
+### Exercício 2: Alternando entre branches
+
+**Objetivo:** trocar de branch com `switch` e observar como os arquivos mudam conforme o contexto.
+
+**Passos:**
+
+1. Crie a pasta `ex02-alternar` com `git init`.
+2. No `main`, crie `idade.c` com o código abaixo e faça o commit `feat: adiciona cálculo de idade`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int ano_atual = 2026, ano_nasc;
+    printf("Ano de nascimento: ");
+    scanf("%d", &ano_nasc);
+    printf("Idade: %d\n", ano_atual - ano_nasc);
+    return 0;
+}
+```
+
+3. Crie e troque para a branch `feature/mensagem` com `git switch -c feature/mensagem`.
+4. Nela, crie `mensagem.c` com `printf("Você tem a idade calculada!\n");` dentro de um `main`, e faça um commit.
+5. Use `ls` para ver os arquivos da branch atual. Depois troque para `main` com `git switch main` e use `ls` novamente.
+6. Confirme que `mensagem.c` some do diretório quando você volta para `main`.
+
+:::note
+`git checkout <branch>` também troca de branch, mas `git switch` é o comando mais claro para essa tarefa.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex02-alternar
+cd ex02-alternar
+git init
+
+# crie idade.c
+git add idade.c
+git commit -m "feat: adiciona cálculo de idade"
+
+git switch -c feature/mensagem
+# crie mensagem.c
+git add mensagem.c
+git commit -m "feat: adiciona mensagem"
+
+ls                  # idade.c e mensagem.c
+git switch main
+ls                  # só idade.c
+```
+
+</details>
+
+---
+
+### Exercício 3: Merge com fast-forward
+
+**Objetivo:** integrar uma branch que está à frente do `main` sem criar commit de merge.
+
+**Passos:**
+
+1. Crie a pasta `ex03-ff` com `git init`.
+2. Crie `leitura.c` com o código abaixo no `main` e faça o commit `feat: adiciona leitura inicial`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int valor;
+    printf("Digite um valor: ");
+    scanf("%d", &valor);
+    printf("Valor lido: %d\n", valor);
+    return 0;
+}
+```
+
+3. Crie `feature/leitura-segura` e nela altere o `scanf` para verificar o retorno, como no exemplo abaixo. Faça o commit `fix: valida leitura do valor`.
+
+```c
+if (scanf("%d", &valor) != 1) {
+    printf("Entrada inválida\n");
+    return 1;
+}
+```
+
+4. Volte para `main` e execute `git merge feature/leitura-segura`.
+5. Use `git log --oneline --graph` e observe que não há commit de merge, apenas o ponteiro do `main` avançou.
+
+:::tip
+Fast-forward acontece quando o `main` não recebeu commits novos desde que a branch foi criada. O histórico continua linear.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex03-ff
+cd ex03-ff
+git init
+
+# crie leitura.c
+git add leitura.c
+git commit -m "feat: adiciona leitura inicial"
+
+git switch -c feature/leitura-segura
+# altere leitura.c com a validação do scanf
+git add leitura.c
+git commit -m "fix: valida leitura do valor"
+
+git switch main
+git merge feature/leitura-segura    # Fast-forward
+git log --oneline --graph
+```
+
+</details>
+
+---
+
+### Exercício 4: Merge com commit explícito (--no-ff)
+
+**Objetivo:** criar um commit de merge para deixar visível, no histórico, que uma funcionalidade foi desenvolvida em uma branch separada.
+
+**Passos:**
+
+1. Crie a pasta `ex04-noff` com `git init`.
+2. No `main`, crie `imc.c` com o código abaixo e faça o commit `feat: calcula IMC`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    float peso, altura, imc;
+    printf("Peso (kg) e altura (m): ");
+    scanf("%f %f", &peso, &altura);
+    imc = peso / (altura * altura);
+    printf("IMC: %.2f\n", imc);
+    return 0;
+}
+```
+
+3. Crie `feature/classificacao` e adicione a classificação do IMC (abaixo de 18.5, normal, acima de 25), com pelo menos um commit.
+4. Volte ao `main` e faça o merge com `git merge --no-ff feature/classificacao -m "merge: adiciona classificação do IMC"`.
+5. Use `git log --oneline --graph --all` e observe a bifurcação e o commit de merge.
+
+:::note
+Em muitas equipes, `--no-ff` é o padrão em Pull Requests porque preserva a história das funcionalidades no grafo do projeto.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex04-noff
+cd ex04-noff
+git init
+
+# crie imc.c
+git add imc.c
+git commit -m "feat: calcula IMC"
+
+git switch -c feature/classificacao
+# adicione a classificação do IMC em imc.c
+git add imc.c
+git commit -m "feat: adiciona classificação do IMC"
+
+git switch main
+git merge --no-ff feature/classificacao -m "merge: adiciona classificação do IMC"
+git log --oneline --graph --all
+```
+
+</details>
+
+---
+
+### Exercício 5: Comparando branches
+
+**Objetivo:** descobrir o que uma branch tem a mais ou a menos em relação a outra, antes de integrá-la, com `git log A..B` e `git diff A..B`.
+
+**Preparação:** crie a pasta `ex05-comparar` com `git init`. No `main`, crie `conversor.c` com o código abaixo e faça o commit `feat: conversor base`. Crie `feature/milhas` e nela adicione a conversão para milhas (`km * 0.621371`), com commit. Volte ao `main` e adicione um commit `docs: comenta conversor` que altera apenas um comentário.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    float km;
+    printf("Distância em km: ");
+    scanf("%f", &km);
+    printf("Em metros: %.1f\n", km * 1000);
+    return 0;
+}
+```
+
+**Passos:**
+
+1. Execute `git log --oneline main..feature/milhas` para ver os commits que estão só na branch `feature/milhas`.
+2. Execute `git log --oneline feature/milhas..main` para ver os commits que estão só no `main`.
+3. Execute `git diff main feature/milhas` para ver as diferenças de conteúdo entre as duas branches.
+4. Execute `git diff --stat main..feature/milhas` para ver apenas quais arquivos mudaram.
+
+:::tip
+A notação `A..B` significa "o que está em B e não está em A". Ela é a forma mais direta de saber o que um merge vai trazer.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex05-comparar
+cd ex05-comparar
+git init
+
+# crie conversor.c e faça o commit "feat: conversor base"
+git switch -c feature/milhas
+# adicione a conversão para milhas e faça o commit
+git switch main
+# altere um comentário em conversor.c e faça o commit "docs: comenta conversor"
+
+git log --oneline main..feature/milhas   # commits só na feature
+git log --oneline feature/milhas..main   # commits só no main
+git diff main feature/milhas
+git diff --stat main..feature/milhas
+```
+
+</details>
+
+---
+
+### Exercício 6: Renomeando branches e criando a partir de um commit
+
+**Objetivo:** corrigir o nome de uma branch e criar uma nova branch a partir de um commit antigo, em vez do ponto atual.
+
+**Preparação:** crie a pasta `ex06-renomear` com `git init`. Faça três commits no `main` com o arquivo `contagem.c` abaixo, alterando a mensagem de saída a cada commit. Use as mensagens `feat: primeira versão`, `feat: segunda versão` e `feat: terceira versão`.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Contagem: 1\n");
+    return 0;
+}
+```
+
+Depois, crie a branch `feature/contagem-errada` no commit atual.
+
+**Passos:**
+
+1. Renomeie a branch com `git branch -m feature/contagem-errada feature/contagem`.
+2. Confirme com `git branch`.
+3. Use `git log --oneline` para copiar o hash do segundo commit (`feat: segunda versão`).
+4. Crie a branch `hotfix/versao-anterior` a partir desse commit com `git switch -c hotfix/versao-anterior <hash>`.
+5. Confirme com `git log --oneline --decorate` que `hotfix/versao-anterior` aponta para o segundo commit, e não para o terceiro.
+
+:::warning
+Renomear uma branch que já foi enviada ao remoto exige também apagar o nome antigo no remoto e enviar o novo. Isso é coberto no módulo de repositórios remotos.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex06-renomear
+cd ex06-renomear
+git init
+
+# crie contagem.c e faça três commits com as mensagens indicadas
+git branch feature/contagem-errada
+
+git branch -m feature/contagem-errada feature/contagem
+git branch
+
+git log --oneline                          # copie o hash de "segunda versão"
+git switch -c hotfix/versao-anterior a1b2c3d
+git log --oneline --decorate               # hotfix aponta para "segunda versão"
+```
+
+</details>
+
+---
+
+### Exercício 7: Guardando trabalho com stash ao trocar de branch
+
+**Objetivo:** trocar de branch com alterações pendentes, guardando-as com `stash` e recuperando-as depois.
+
+**Preparação:** crie a pasta `ex07-stash` com `git init`. Crie `saudacao.c` com o código abaixo e faça o commit `feat: adiciona saudação`. Crie a branch `feature/cores`.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Olá, mundo!\n");
+    return 0;
+}
+```
+
+**Passos:**
+
+1. Na branch `feature/cores`, altere a saída para `Olá, mundo colorido!` **sem** commitar.
+2. Tente trocar para `main` com `git switch main`. O Git deve recusar, porque a alteração conflitaria com a outra branch.
+3. Guarde a alteração com `git stash push -m "cores em andamento"`.
+4. Troque para `main` com `git switch main` e faça um commit `docs: comenta saudação` em `saudacao.c`.
+5. Volte para `feature/cores` com `git switch feature/cores` e recupere a alteração com `git stash pop`.
+6. Confira com `git stash list` que a lista de stashes está vazia e com `git status` que a alteração voltou.
+
+:::tip
+`git stash` é uma pilha: o último guardado é o primeiro a sair. Use `git stash list` para ver todas as entradas e `git stash apply stash@{1}` para aplicar uma específica.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex07-stash
+cd ex07-stash
+git init
+
+# crie saudacao.c e faça o commit "feat: adiciona saudação"
+git switch -c feature/cores
+# altere a saída para "Olá, mundo colorido!"
+
+git switch main                       # erro: alterações locais conflitam
+git stash push -m "cores em andamento"
+
+git switch main
+# edite saudacao.c com um comentário e faça o commit "docs: comenta saudação"
+
+git switch feature/cores
+git stash pop
+git stash list                        # vazio
+git status
+```
+
+</details>
+
+---
+
+### Exercício 8: Conflito simples e resolução manual
+
+**Objetivo:** provocar um conflito entre duas branches que alteram a mesma linha e resolvê-lo manualmente.
+
+**Passos:**
+
+1. Crie a pasta `ex08-conflito` com `git init`.
+2. No `main`, crie `temperatura.c` com o código abaixo e faça o commit `feat: conversão de temperatura`:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    float celsius;
+    printf("Temperatura em Celsius: ");
+    scanf("%f", &celsius);
+    printf("Fahrenheit: %.1f\n", celsius * 9 / 5 + 32);
+    return 0;
+}
+```
+
+3. Crie `feature/kelvin` e troque a última linha do `printf` por `Kelvin: %.1f\n` com o cálculo `celsius + 273.15`. Faça o commit.
+4. Volte ao `main`, crie `feature/formato` e altere **a mesma linha** para `printf("Fahrenheit: %.2f\n", celsius * 9 / 5 + 32);`. Faça o commit.
+5. No `main`, execute `git merge feature/kelvin` (sem conflito) e depois `git merge feature/formato`. O segundo merge gera conflito.
+6. Abra `temperatura.c`, escolha uma versão final que faça sentido e remova os marcadores `<<<<<<<`, `=======` e `>>>>>>>`.
+7. Finalize com `git add temperatura.c` e `git commit`.
+
+:::danger
+Nunca deixe marcadores de conflito no código. Eles fazem o programa não compilar.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex08-conflito
+cd ex08-conflito
+git init
+
+# crie temperatura.c
+git add temperatura.c
+git commit -m "feat: conversão de temperatura"
+
+git switch -c feature/kelvin
+# troque a linha do printf por Kelvin: %.1f\n com celsius + 273.15
+git add temperatura.c
+git commit -m "feat: adiciona conversão para Kelvin"
+
+git switch main
+git switch -c feature/formato
+# altere o printf para %.2f
+git add temperatura.c
+git commit -m "fix: aumenta precisão da saída"
+
+git switch main
+git merge feature/kelvin
+git merge feature/formato       # CONFLITO
+
+# edite temperatura.c, remova os marcadores e deixe o código válido
+git add temperatura.c
+git commit -m "merge: resolve conflito de formatação"
+```
+
+</details>
+
+---
+
+### Exercício 9: Resolvendo conflitos com --ours e --theirs
+
+**Objetivo:** escolher rapidamente uma versão inteira de um arquivo em conflito, usando `--ours` e `--theirs`.
+
+**Preparação:** crie a pasta `ex09-ours-theirs` com `git init`. No `main`, crie `ordenacao.c` com o código abaixo e faça o commit `feat: ordenação simples`. Crie a branch `feature/ordem-decrescente` e altere a condição de troca para `v[j] < v[j+1]`. Faça o commit. Volte ao `main` e altere também a linha do `printf` para exibir o vetor com a legenda `Vetor: `. Faça o commit.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int v[] = {5, 2, 9, 1, 7};
+    int n = 5, aux;
+
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - 1 - i; j++) {
+            if (v[j] > v[j + 1]) {
+                aux = v[j];
+                v[j] = v[j + 1];
+                v[j + 1] = aux;
+            }
+        }
+    }
+
+    for (int i = 0; i < n; i++) {
+        printf("%d ", v[i]);
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+**Passos:**
+
+1. No `main`, execute `git merge feature/ordem-decrescente`. Haverá conflito.
+2. Como queremos manter a ordem **decrescente** da branch, execute `git checkout --theirs ordenacao.c` (a versão que chega, de `feature/ordem-decrescente`).
+3. Execute `git add ordenacao.c` e `git commit`.
+4. Confira o arquivo: ele deve estar com a ordem decrescente e sem marcadores.
+
+:::warning
+`--ours` e `--theirs` substituem o arquivo inteiro. Use-os apenas quando uma das versões for claramente a correta. Para conflitos parciais, edite o arquivo manualmente.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git switch main
+git merge feature/ordem-decrescente     # CONFLITO em ordenacao.c
+
+git checkout --theirs ordenacao.c       # mantém a versão da branch que chega
+git add ordenacao.c
+git commit -m "merge: mantém ordenação decrescente"
+```
+
+Observação: durante um merge, `--ours` é a versão da branch atual (`main`) e `--theirs` é a versão da branch que está sendo integrada.
+
+</details>
+
+---
+
+### Exercício 10: Trazendo um commit específico com cherry-pick
+
+**Objetivo:** aplicar apenas um commit de uma branch em outra, sem integrar a branch inteira.
+
+**Preparação:** crie a pasta `ex10-cherry` com `git init`. No `main`, crie `calc.c` com o código abaixo (com um erro proposital na subtração) e faça o commit `feat: calculadora básica`. Crie a branch `feature/relatorio` e nela: (a) crie `relatorio.c` com `printf("Relatório gerado\n");` dentro de um `main` e faça o commit `feat: adiciona relatório`; (b) corrija a subtração em `calc.c` e faça o commit `fix: corrige subtração`.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int a = 10, b = 4;
+    printf("Soma: %d\n", a + b);
+    printf("Subtração: %d\n", a * b);
+    return 0;
+}
+```
+
+**Passos:**
+
+1. Volte para `main`. Ele ainda tem o erro na subtração.
+2. Execute `git log --oneline feature/relatorio` e copie o hash do commit `fix: corrige subtração`.
+3. Aplique esse commit no `main` com `git cherry-pick <hash>`.
+4. Confirme com `git log --oneline` que o commit foi recriado no `main` com um hash novo, e que `relatorio.c` **não** veio junto.
+5. Compile `calc.c` e confirme que a subtração agora está correta.
+
+:::note
+`cherry-pick` cria um novo commit com o mesmo conteúdo, mas com outro hash, porque a base é diferente. Por isso, o histórico passa a ter a alteração duas vezes se a branch original for integrada depois.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex10-cherry
+cd ex10-cherry
+git init
+
+# crie calc.c com o erro na subtração e faça o commit
+git switch -c feature/relatorio
+# crie relatorio.c e faça o commit "feat: adiciona relatório"
+# corrija a subtração em calc.c e faça o commit "fix: corrige subtração"
+
+git log --oneline feature/relatorio   # copie o hash de "fix: corrige subtração"
+git switch main
+git cherry-pick b2c3d4e
+git log --oneline
+gcc calc.c -o calc.exe && ./calc.exe
+```
+
+</details>
+
+---
+
+### Exercício 11: Atualizando uma branch com rebase
+
+**Objetivo:** trazer para a sua branch os commits novos do `main`, mantendo o histórico linear.
+
+**Preparação:** crie a pasta `ex11-rebase` com `git init`. No `main`, crie `conversor.c` com o código abaixo e faça o commit `feat: conversor base`. Crie `feature/metros-quadrados` e adicione, em `conversor.c`, a conversão para metros quadrados (com commit). Volte ao `main` e crie `utilidades.c` com `printf("Utilidades carregadas\n");` em um `main`. Faça o commit `chore: adiciona utilidades`.
+
+**Passos:**
+
+1. Volte para `feature/metros-quadrados` e execute `git rebase main`.
+2. Use `git log --oneline --graph --all` e observe que o commit da sua branch agora está sobre o commit mais recente do `main`.
+3. Confirme com `git merge feature/metros-quadrados` no `main` que a integração é um fast-forward.
+
+:::tip
+`rebase` reaplica seus commits sobre a base escolhida. Não o use em branches que outras pessoas já estão usando, pois ele reescreve commits.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex11-rebase
+cd ex11-rebase
+git init
+
+# crie conversor.c e faça o commit "feat: conversor base"
+git switch -c feature/metros-quadrados
+# adicione a conversão para metros quadrados e faça o commit
+git switch main
+# crie utilidades.c e faça o commit "chore: adiciona utilidades"
+
+git switch feature/metros-quadrados
+git rebase main
+git log --oneline --graph --all
+
+git switch main
+git merge feature/metros-quadrados      # fast-forward
+```
+
+</details>
+
+---
+
+### Exercício 12: Reorganizando commits com rebase interativo
+
+**Objetivo:** unir, reescrever e remover commits de uma branch antes de integrá-la, com `git rebase -i`.
+
+**Preparação:** crie a pasta `ex12-interativo` com `git init` e um commit inicial no `main` com `menu.c` (`printf("Menu\n");` dentro de um `main`). Crie `feature/menu` e faça três commits em sequência, cada um com uma pequena alteração em `menu.c`: `wip: primeira ideia`, `wip: ajustes`, `fix: erro de digitação`.
+
+**Passos:**
+
+1. Execute `git log --oneline` e confirme os três commits da branch.
+2. Execute `git rebase -i HEAD~3`. No editor, troque `pick` por `squash` (ou `s`) nos dois últimos commits, para uni-los ao primeiro.
+3. Ao final do rebase, o Git pede uma nova mensagem. Escreva `feat: adiciona menu`.
+4. Confirme com `git log --oneline` que a branch agora tem um único commit.
+5. Faça outro rebase interativo com `git rebase -i HEAD~1` e troque `pick` por `reword` (ou `r`) para reescrever apenas a mensagem, mudando-a para `feat: adiciona menu principal`.
+
+:::danger
+O rebase interativo reescreve commits. Use-o apenas em branches que você ainda não enviou ou que só você usa.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex12-interativo
+cd ex12-interativo
+git init
+
+# crie menu.c e faça o commit "chore: menu inicial" no main
+git switch -c feature/menu
+# faça três commits: "wip: primeira ideia", "wip: ajustes", "fix: erro de digitação"
+
+git log --oneline
+git rebase -i HEAD~3
+# no editor:
+# pick   <hash> wip: primeira ideia
+# squash <hash> wip: ajustes
+# squash <hash> fix: erro de digitação
+# ao salvar, escreva a mensagem: feat: adiciona menu
+
+git log --oneline                    # um commit novo na branch
+
+git rebase -i HEAD~1
+# no editor: reword <hash> feat: adiciona menu
+# nova mensagem: feat: adiciona menu principal
+```
+
+</details>
+
+---
+
+### Exercício 13: Cancelando um merge com conflito
+
+**Objetivo:** perceber que um merge com conflito pode ser abortado, voltando ao estado anterior, quando você ainda não quer resolver agora.
+
+**Preparação:** crie a pasta `ex13-abortar` com `git init`. No `main`, crie `temperatura.c` e faça o commit. Crie duas branches a partir dele, `feature/a` e `feature/b`, alterando a mesma linha do `printf` de forma diferente em cada uma, com um commit cada.
+
+**Passos:**
+
+1. No `main`, execute `git merge feature/a`. Ele deve ser um fast-forward.
+2. Execute `git merge feature/b`. Deve ocorrer conflito.
+3. Em vez de resolver, execute `git merge --abort`.
+4. Confirme com `git status` que o repositório voltou ao estado anterior ao merge e que `temperatura.c` está sem marcadores.
+5. Execute `git log --oneline` para confirmar que nenhum commit novo foi criado.
+
+:::note
+`git merge --abort` só funciona enquanto o merge não foi concluído. Depois do commit de merge, use `git reset` ou `git revert`.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex13-abortar
+cd ex13-abortar
+git init
+
+# crie temperatura.c no main e faça o commit
+git switch -c feature/a
+# altere a linha do printf e faça o commit
+git switch main
+git switch -c feature/b
+# altere a mesma linha de outra forma e faça o commit
+git switch main
+
+git merge feature/a
+git merge feature/b             # CONFLITO
+git merge --abort               # cancela o merge
+
+git status                      # working tree clean
+git log --oneline
+```
+
+</details>
+
+---
+
+### Exercício 14: Trabalhando em HEAD destacado a partir de um commit antigo
+
+**Objetivo:** olhar o projeto como estava em um commit antigo, fazer um experimento e salvá-lo em uma branch antes de sair, evitando perder commits.
+
+**Preparação:** crie a pasta `ex14-destacado` com `git init`. Faça três commits no `main` com `versao.c`, cada um com uma saída diferente (`v1`, `v2` e `v3`).
+
+**Passos:**
+
+1. Execute `git log --oneline` e copie o hash do commit `v1`.
+2. Vá para esse commit com `git checkout <hash>`. O Git avisa que você está em **HEAD destacado**.
+3. Compile e execute `versao.c`. Ele deve exibir `v1`.
+4. Faça um commit de experimento, com `printf("experimento\n");` no lugar da saída, e com a mensagem `exp: teste a partir de v1`.
+5. Antes de sair, crie uma branch para guardar esse commit com `git switch -c experimento`.
+6. Volte para o `main` com `git switch main` e confirme com `git log --oneline --all --graph` que o experimento continua acessível pela branch `experimento`.
+
+:::warning
+Se você sair do HEAD destacado sem criar uma branch, os commits feitos ali ficam sem nome e podem ser perdidos. O `reflog` ainda ajuda a recuperá-los, mas é mais seguro nomear a branch antes.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex14-destacado
+cd ex14-destacado
+git init
+
+# crie versao.c com v1, faça o commit; depois v2 e v3
+
+git log --oneline                  # copie o hash de v1
+git checkout a1b2c3d               # HEAD destacado
+gcc versao.c -o versao.exe && ./versao.exe   # v1
+
+# altere a saída para "experimento" e faça o commit
+git commit -m "exp: teste a partir de v1"
+git switch -c experimento          # salva o commit em uma branch
+
+git switch main
+git log --oneline --all --graph
+```
+
+</details>
+
+---
+
+### Exercício 15: Limpando branches já integradas
+
+**Objetivo:** identificar quais branches já foram mescladas e removê-las com segurança.
+
+**Preparação:** crie a pasta `ex15-limpeza` com `git init`. Crie `fila.c` no `main` com o código abaixo e faça o commit `feat: fila básica`:
+
+```c
+#include <stdio.h>
+#define MAX 10
+
+int fila[MAX];
+int inicio = 0, fim = 0;
+
+void enfileira(int valor) {
+    if (fim < MAX) {
+        fila[fim++] = valor;
+    }
+}
+
+int main(void) {
+    enfileira(1);
+    enfileira(2);
+    printf("Primeiro da fila: %d\n", fila[inicio]);
+    return 0;
+}
+```
+
+Crie três branches a partir do `main`: `feature/a`, `feature/b` e `feature/c`. Em cada uma, faça um commit alterando `fila.c`.
+
+**Passos:**
+
+1. Integre `feature/a` e `feature/b` ao `main`. Deixe `feature/c` sem integrar.
+2. Use `git branch --merged` para ver as branches já integradas.
+3. Apague **apenas** as branches integradas com `git branch -d feature/a` e `git branch -d feature/b`.
+4. Tente apagar `feature/c` com `git branch -d feature/c`. O Git deve recusar.
+5. Use `git branch -D feature/c` apenas se tiver certeza de que pode descartá-la.
+
+:::warning
+`git branch -D` apaga uma branch mesmo com commits não integrados. Os commits continuam no `reflog` por algum tempo, mas use com cuidado.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir ex15-limpeza
+cd ex15-limpeza
+git init
+
+# crie fila.c e faça o commit
+git add fila.c
+git commit -m "feat: fila básica"
+
+git switch -c feature/a
+# altere fila.c e faça commit
+git switch main
+git switch -c feature/b
+# altere fila.c e faça commit
+git switch main
+git switch -c feature/c
+# altere fila.c e faça commit
+git switch main
+
+git merge feature/a
+git merge feature/b
+
+git branch --merged             # feature/a, feature/b, main
+git branch -d feature/a
+git branch -d feature/b
+git branch -d feature/c         # erro: não está integrada
+git branch -D feature/c         # força a remoção
+```
+
+</details>

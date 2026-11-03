@@ -1,11 +1,611 @@
 ---
-slug: /versionamento/submodulos
+id: submodulos
+title: Submódulos
+sidebar_label: 4. Submódulos
+sidebar_position: 4
 ---
 
-# Submódulos
+Esta lista tem **14 exercícios** sobre submódulos do Git. Um submódulo permite incluir um repositório dentro de outro, mantendo cada um com seu próprio histórico. É muito usado para reaproveitar bibliotecas em C entre vários projetos.
 
-Exercícios sobre inclusão e gerenciamento de repositórios Git como submódulos.
+## 🛠 Requisitos e Materiais
 
-## Exercícios
+- **Git** instalado (verifique com `git --version`)
+- **Compilador C** (`gcc` ou `clang`)
+- **Terminal** (Bash, PowerShell ou Git Bash)
+- **Editor de código**, como VS Code
+- Conhecimento de `add`, `commit`, `push`, `pull`, `branch` e `merge`
 
-Adicione aqui os exercícios deste submódulo.
+:::note
+Nos exercícios, a biblioteca e o projeto principal ficam em pastas locais, lado a lado, dentro de uma pasta de trabalho (por exemplo, `exercicios-submodulos`). Os remotos simulados ficam em uma pasta `remotos`. Assim você pratica o fluxo sem depender de contas externas. Depois, o mesmo procedimento vale para repositórios no GitHub, trocando o caminho local pela URL.
+:::
+
+:::warning
+Versões recentes do Git bloqueiam submódulos com caminho local por segurança. Nos comandos `git submodule add` dos exercícios, use `git -c protocol.file.allow=always submodule add ...`.
+:::
+
+## 📝 Lista de Exercícios
+
+### Exercício 1: Criando a biblioteca de matemática
+
+**Objetivo:** criar um repositório que será usado como biblioteca por outro projeto.
+
+**Passos:**
+
+1. Crie a pasta `matematica` e entre nela.
+2. Inicialize o repositório com `git init`.
+3. Crie o arquivo `matematica.h` com o conteúdo abaixo:
+
+```c
+#ifndef MATEMATICA_H
+#define MATEMATICA_H
+
+int soma(int a, int b);
+int subtrai(int a, int b);
+int fatorial(int n);
+
+#endif
+```
+
+4. Crie o arquivo `matematica.c` com o conteúdo abaixo:
+
+```c
+#include "matematica.h"
+
+int soma(int a, int b) {
+    return a + b;
+}
+
+int subtrai(int a, int b) {
+    return a - b;
+}
+
+int fatorial(int n) {
+    int resultado = 1;
+    for (int i = 2; i <= n; i++) {
+        resultado *= i;
+    }
+    return resultado;
+}
+```
+
+5. Faça o commit `feat: cria biblioteca de matemática`.
+
+:::tip
+O `#ifndef` no cabeçalho evita inclusão dupla quando o arquivo é usado em vários lugares do projeto.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir matematica
+cd matematica
+git init
+
+# crie matematica.h e matematica.c com o conteúdo acima
+git add matematica.h matematica.c
+git commit -m "feat: cria biblioteca de matemática"
+```
+
+</details>
+
+---
+
+### Exercício 2: Criando o projeto principal e adicionando o submódulo
+
+**Objetivo:** adicionar a biblioteca como submódulo dentro de um projeto que a utiliza.
+
+**Passos:**
+
+1. Volte para a pasta de trabalho (pai de `matematica`) e crie a pasta `calculadora-principal`.
+2. Entre em `calculadora-principal`, execute `git init` e crie `README.md` com a linha `Calculadora que usa uma biblioteca externa.`. Faça o commit `docs: adiciona README`.
+3. Adicione a biblioteca como submódulo na pasta `libs/matematica`:
+
+```bash
+git -c protocol.file.allow=always submodule add ../matematica libs/matematica
+```
+
+4. Execute `git status`. Você deve ver `.gitmodules` e a pasta `libs/matematica` preparados.
+5. Faça o commit `chore: adiciona submódulo matematica`.
+
+:::note
+O submódulo não copia os arquivos para o repositório principal. Ele registra apenas uma referência a um commit específico da biblioteca.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ..
+mkdir calculadora-principal
+cd calculadora-principal
+git init
+
+echo "Calculadora que usa uma biblioteca externa." > README.md
+git add README.md
+git commit -m "docs: adiciona README"
+
+git -c protocol.file.allow=always submodule add ../matematica libs/matematica
+git status
+# new file: .gitmodules
+# new file: libs/matematica
+
+git commit -m "chore: adiciona submódulo matematica"
+```
+
+</details>
+
+---
+
+### Exercício 3: Entendendo o arquivo .gitmodules
+
+**Objetivo:** inspecionar como o Git registra o submódulo e o que cada parte representa.
+
+**Passos:**
+
+1. Dentro de `calculadora-principal`, abra o arquivo `.gitmodules` e observe o nome, o caminho e a URL do submódulo.
+2. Execute `git submodule status` e observe o hash do commit referenciado.
+3. Execute `git submodule` (sem argumentos) para ver a mesma informação de forma resumida.
+4. Entre em `libs/matematica` e execute `git log --oneline`. Note que se trata de um repositório Git completo, com histórico próprio.
+5. Volte para a raiz com `cd ../..` e execute `git ls-tree HEAD libs/`. Observe que o item aparece como um commit, não como arquivos.
+
+:::tip
+Um submódulo aparece no repositório pai como um único ponteiro para um commit. Os arquivos da biblioteca não entram no histórico do projeto principal.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cat .gitmodules
+# [submodule "libs/matematica"]
+#     path = libs/matematica
+#     url = ../matematica
+
+git submodule status
+git submodule
+
+cd libs/matematica
+git log --oneline
+cd ../..
+
+git ls-tree HEAD libs/
+# 160000 commit <hash>    libs/matematica
+```
+
+O modo `160000` indica que o item é um submódulo (um commit), não um arquivo comum.
+
+</details>
+
+---
+
+### Exercício 4: Usando a biblioteca no programa principal
+
+**Objetivo:** incluir o cabeçalho da biblioteca em um programa e compilar com o código-fonte do submódulo.
+
+**Passos:**
+
+1. Dentro de `calculadora-principal`, crie `main.c` com o código abaixo:
+
+```c
+#include <stdio.h>
+#include "libs/matematica/matematica.h"
+
+int main(void) {
+    int a = 10, b = 4;
+    printf("Soma: %d\n", soma(a, b));
+    printf("Subtração: %d\n", subtrai(a, b));
+    printf("Fatorial de 5: %d\n", fatorial(5));
+    return 0;
+}
+```
+
+2. Compile incluindo o código-fonte da biblioteca: `gcc main.c libs/matematica/matematica.c -o calculadora.exe`.
+3. Execute o programa e confira a saída.
+4. Faça o commit de `main.c`: `feat: usa biblioteca matemática no programa principal`.
+
+:::note
+Como o projeto principal precisa de duas unidades de compilação (`main.c` e `matematica.c`), o comando `gcc` recebe os dois arquivos. Ferramentas como Makefile e CMake automatizam isso em projetos maiores.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+# crie main.c com o conteúdo acima
+gcc main.c libs/matematica/matematica.c -o calculadora.exe
+./calculadora.exe
+# Soma: 14
+# Subtração: 6
+# Fatorial de 5: 120
+
+git add main.c
+git commit -m "feat: usa biblioteca matemática no programa principal"
+```
+
+</details>
+
+---
+
+### Exercício 5: Clonando um projeto que tem submódulos
+
+**Objetivo:** entender por que o submódulo não vem preenchido em um clone comum e como buscá-lo.
+
+**Passos:**
+
+1. Volte para a pasta de trabalho e clone o projeto principal em outro lugar: `git clone calculadora-principal clone-teste`.
+2. Entre em `clone-teste` e execute `ls libs/matematica`. A pasta existe, mas está **vazia**.
+3. Saia da pasta, remova `clone-teste` com `rm -rf clone-teste` (ou pelo explorador) e clone novamente com a opção de submódulos: `git clone --recurse-submodules calculadora-principal clone-teste`.
+4. Confirme com `ls libs/matematica` que os arquivos da biblioteca agora estão presentes.
+
+:::warning
+Se você já clonou sem `--recurse-submodules`, use `git submodule update --init --recursive` dentro da pasta do projeto para preencher os submódulos.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ..
+git clone calculadora-principal clone-teste
+ls clone-teste/libs/matematica          # vazio
+
+rm -rf clone-teste
+git clone --recurse-submodules calculadora-principal clone-teste
+ls clone-teste/libs/matematica          # matematica.c, matematica.h
+
+# alternativa para um clone já existente:
+cd clone-teste
+git submodule update --init --recursive
+```
+
+</details>
+
+---
+
+### Exercício 6: Atualizando a biblioteca e o ponteiro no projeto principal
+
+**Objetivo:** alterar a biblioteca, commitar na própria biblioteca e depois atualizar o projeto principal para apontar para o novo commit.
+
+**Passos:**
+
+1. Entre em `libs/matematica` (dentro de `calculadora-principal`). Adicione a função `int multiplica(int a, int b)` em `matematica.c` e declare-a em `matematica.h`.
+2. Faça o commit **dentro do submódulo**: `git add .` e `git commit -m "feat: adiciona multiplicação"`.
+3. Volte para a raiz de `calculadora-principal`. Execute `git status`. Você verá `modified: libs/matematica (new commits)`.
+4. Faça o commit no projeto principal para registrar o novo ponteiro: `git add libs/matematica` e `git commit -m "chore: atualiza submódulo matematica"`.
+5. Confira com `git submodule status` que o hash agora corresponde ao novo commit da biblioteca.
+
+:::danger
+Se você esquecer de commitar dentro do submódulo antes de atualizar o projeto principal, outros colaboradores receberão um ponteiro para um commit que não existe no repositório da biblioteca.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd libs/matematica
+# adicione multiplica em matematica.c e matematica.h
+git add .
+git commit -m "feat: adiciona multiplicação"
+cd ../..
+
+git status
+# modified: libs/matematica (new commits)
+
+git add libs/matematica
+git commit -m "chore: atualiza submódulo matematica"
+git submodule status
+```
+
+</details>
+
+---
+
+### Exercício 7: Trabalhando dentro do submódulo em uma branch
+
+**Objetivo:** perceber o estado de **HEAD destacado** (detached HEAD) do submódulo e trabalhar nele corretamente, em uma branch.
+
+**Passos:**
+
+1. Entre em `libs/matematica` e execute `git status`. Observe a mensagem de HEAD destacado.
+2. Crie a branch `main` a partir do commit atual, se ela não existir: `git switch -c main`.
+3. Crie a branch `feature/divisao` e adicione `int divide(int a, int b)` em `matematica.c` com verificação de divisão por zero, retornando `0` nesse caso.
+4. Faça o commit na branch `feature/divisao`.
+5. Volte para `main` dentro do submódulo com `git switch main` e execute `git merge feature/divisao`.
+6. Volte ao projeto principal e registre o novo ponteiro com `git add libs/matematica` e `git commit`.
+
+:::note
+Submódulos costumam ficar em HEAD destacado porque apontam para um commit fixo. Trabalhar em uma branch dentro do submódulo evita perder commits quando você trocar de versão.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd libs/matematica
+git status                        # HEAD detached at <hash>
+
+git switch -c main
+git switch -c feature/divisao
+# adicione divide() com verificação de zero
+git add .
+git commit -m "feat: adiciona divisão segura"
+
+git switch main
+git merge feature/divisao
+
+cd ../..
+git add libs/matematica
+git commit -m "chore: atualiza submódulo com divisão"
+```
+
+</details>
+
+---
+
+### Exercício 8: Atualizando submódulos a partir do remoto
+
+**Objetivo:** trazer para o projeto principal as versões mais recentes da biblioteca, usando `git submodule update --remote`.
+
+**Preparação:** no repositório `matematica` (fora do projeto), faça uma alteração em `matematica.c`, como uma função `int maximo(int a, int b)`, e faça o commit `feat: adiciona maior valor`.
+
+**Passos:**
+
+1. Dentro de `calculadora-principal`, execute `git submodule update --remote libs/matematica`.
+2. Confira com `git status` que o ponteiro do submódulo foi atualizado.
+3. Verifique que `libs/matematica/matematica.c` agora contém `maximo`.
+4. Registre a atualização com `git add libs/matematica` e `git commit -m "chore: atualiza submódulo para versão mais recente"`.
+
+:::tip
+`git submodule update --remote` busca a branch configurada no submódulo (normalmente `main`). Para usar outra branch, configure-a com `git config -f .gitmodules submodule.libs/matematica.branch NOME_DA_BRANCH`.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ../matematica
+# adicione maximo() em matematica.c
+git add .
+git commit -m "feat: adiciona maior valor"
+cd ../calculadora-principal
+
+git submodule update --remote libs/matematica
+git status                        # modified: libs/matematica (new commits)
+git add libs/matematica
+git commit -m "chore: atualiza submódulo para versão mais recente"
+```
+
+</details>
+
+---
+
+### Exercício 9: Acompanhando alterações com diff e status
+
+**Objetivo:** visualizar mudanças dentro de um submódulo a partir do projeto principal e entender os indicadores do `git status`.
+
+**Passos:**
+
+1. Dentro de `calculadora-principal`, altere `libs/matematica/matematica.c` **sem commitar**, por exemplo acrescentando um comentário.
+2. Execute `git status`. Observe o indicador `modified: libs/matematica (modified content)`.
+3. Execute `git diff` na raiz e observe que o Git mostra apenas o nome do submódulo, não o conteúdo.
+4. Execute `git diff --submodule` para ver o conteúdo real da alteração.
+5. Descarte a alteração dentro do submódulo com `git -C libs/matematica restore matematica.c`.
+
+:::note
+Os dois tipos de mudança são diferentes: **novos commits** dentro do submódulo (que exigem atualizar o ponteiro) e **alterações não commitadas** (que só existem no diretório de trabalho).
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd libs/matematica
+echo "// comentário temporário" >> matematica.c
+cd ../..
+
+git status                        # modified: libs/matematica (modified content)
+git diff                          # mostra apenas o submódulo
+git diff --submodule              # mostra o conteúdo da alteração
+
+git -C libs/matematica restore matematica.c
+git status                        # working tree clean
+```
+
+</details>
+
+---
+
+### Exercício 10: Executando comandos em todos os submódulos com foreach
+
+**Objetivo:** rodar o mesmo comando em todos os submódulos de uma vez, útil quando um projeto tem vários deles.
+
+**Passos:**
+
+1. Dentro de `calculadora-principal`, execute `git submodule foreach 'git status'`. O comando roda dentro de cada submódulo.
+2. Execute `git submodule foreach 'git log --oneline -1'` para ver o último commit de cada um.
+3. Execute `git submodule foreach 'pwd'` e observe que o comando é executado a partir da pasta do submódulo.
+4. Use o recurso com uma condição: `git submodule foreach 'git switch main || echo "sem main"'`.
+
+:::tip
+Dentro do `foreach`, a variável `$name` contém o nome do submódulo e `$sm_path` o caminho dele. Use aspas simples para que o shell não interprete a variável antes da hora.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git submodule foreach 'git status'
+git submodule foreach 'git log --oneline -1'
+git submodule foreach 'pwd'
+git submodule foreach 'git switch main || echo "sem main"'
+
+# exemplo com variáveis
+git submodule foreach 'echo "Submódulo $name em $sm_path"'
+```
+
+</details>
+
+---
+
+### Exercício 11: Atualizando com pull e submódulos
+
+**Objetivo:** trazer as alterações do projeto principal e dos submódulos em um único comando, usando `pull --recurse-submodules`, e tornar esse comportamento padrão com `submodule.recurse`.
+
+**Preparação:** a partir de `calculadora-principal`, crie um clone com submódulos: `git clone --recurse-submodules ../calculadora-principal colega-sub`. Depois, em `calculadora-principal`, dentro de `libs/matematica`, adicione a função `int potencia(int base, int exp)` em `matematica.c`, faça o commit dentro do submódulo e registre o novo ponteiro no projeto principal.
+
+**Passos:**
+
+1. Entre em `colega-sub` e execute `git pull`. O projeto principal é atualizado, mas o submódulo continua na versão antiga.
+2. Execute `git submodule status` e observe que o ponteiro está desatualizado no `colega-sub`.
+3. Execute `git pull --recurse-submodules` e confira que o submódulo também foi atualizado.
+4. Configure o comportamento padrão com `git config submodule.recurse true` e teste novamente com `git pull`.
+
+:::note
+`submodule.recurse` é uma configuração local ou global. Quando ativada, comandos como `pull`, `checkout` e `switch` passam a atualizar os submódulos automaticamente.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+cd ../calculadora-principal
+cd libs/matematica
+# adicione potencia() em matematica.c e matematica.h
+git add .
+git commit -m "feat: adiciona potência"
+cd ../..
+git add libs/matematica
+git commit -m "chore: atualiza submódulo com potência"
+
+cd ../colega-sub
+git pull                          # submódulo continua antigo
+git submodule status
+git pull --recurse-submodules     # atualiza o submódulo também
+
+git config submodule.recurse true
+git pull
+```
+
+</details>
+
+---
+
+### Exercício 12: Sincronizando após mudar a URL de um submódulo
+
+**Objetivo:** atualizar a URL de um submódulo no `.gitmodules` e aplicar a mudança com `git submodule sync`.
+
+**Preparação:** crie o repositório bare `../remotos/matematica.git` com `git clone --bare ../matematica ../remotos/matematica.git`. Ele representa a nova localização da biblioteca.
+
+**Passos:**
+
+1. Dentro de `calculadora-principal`, edite `.gitmodules` e troque a URL de `../matematica` para `../remotos/matematica.git`.
+2. Confira com `git diff .gitmodules` a alteração.
+3. Faça o commit da mudança com `git add .gitmodules` e `git commit -m "chore: muda URL da biblioteca"`.
+4. Execute `git submodule sync` para copiar a nova URL para a configuração local do submódulo.
+5. Confira com `git config --get submodule.libs/matematica.url` e com `git -C libs/matematica remote -v`.
+
+:::warning
+Editar `.gitmodules` sozinho não altera o remote que o submódulo já usa. Por isso o `git submodule sync` é necessário.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+mkdir -p ../remotos
+git clone --bare ../matematica ../remotos/matematica.git
+
+# edite .gitmodules: url = ../remotos/matematica.git
+git diff .gitmodules
+git add .gitmodules
+git commit -m "chore: muda URL da biblioteca"
+
+git submodule sync
+git config --get submodule.libs/matematica.url
+git -C libs/matematica remote -v
+```
+
+</details>
+
+---
+
+### Exercício 13: Publicando o projeto e a biblioteca com push --recurse-submodules
+
+**Objetivo:** enviar commits do projeto principal junto com os commits do submódulo, evitando publicar um ponteiro para um commit que ninguém consegue baixar.
+
+**Preparação:** dentro de `calculadora-principal`, crie o remoto do projeto com `git init --bare ../remotos/calculadora-principal.git` e conecte com `git remote add origin ../remotos/calculadora-principal.git`. Aponte o remote da biblioteca para o repositório bare já criado: `git -C libs/matematica remote set-url origin ../../../remotos/matematica.git`.
+
+**Passos:**
+
+1. Dentro de `libs/matematica`, troque para a branch `main` com `git switch main` e faça um commit novo (por exemplo, um comentário em `matematica.c`). **Não** envie ainda.
+2. Volte para a raiz, registre o novo ponteiro com `git add libs/matematica` e faça o commit `chore: atualiza biblioteca`.
+3. Execute `git push --recurse-submodules=check origin main`. O Git deve recusar, porque o commit do submódulo ainda não está no remoto da biblioteca.
+4. Execute `git push --recurse-submodules=on-demand origin main`. O Git envia primeiro o submódulo e depois o projeto principal.
+5. Confira com `git -C libs/matematica log origin/main --oneline -1` que o commit novo chegou ao remoto da biblioteca.
+
+:::danger
+Sem `--recurse-submodules`, o projeto principal pode ser enviado apontando para um commit que existe só na sua máquina. Quem clonar o projeto não conseguirá baixar o submódulo.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git init --bare ../remotos/calculadora-principal.git
+git remote add origin ../remotos/calculadora-principal.git
+git -C libs/matematica remote set-url origin ../../../remotos/matematica.git
+
+cd libs/matematica
+git switch main
+# comente matematica.c e faça o commit
+cd ../..
+
+git add libs/matematica
+git commit -m "chore: atualiza biblioteca"
+
+git push --recurse-submodules=check origin main      # recusado
+git push --recurse-submodules=on-demand origin main  # envia submódulo e projeto
+
+git -C libs/matematica log origin/main --oneline -1
+```
+
+</details>
+
+---
+
+### Exercício 14: Desinicializando e removendo um submódulo
+
+**Objetivo:** remover completamente um submódulo do projeto, incluindo a configuração local, os arquivos do diretório e os dados internos do Git.
+
+**Passos:**
+
+1. Dentro de `calculadora-principal`, desinicialize o submódulo com `git submodule deinit -f libs/matematica`. Isso remove o conteúdo do diretório e a configuração local, mas mantém o registro no projeto.
+2. Remova o registro do índice e do diretório com `git rm -f libs/matematica`.
+3. Remova a entrada do `.gitmodules` com `git config -f .gitmodules --remove-section submodule.libs/matematica`. Se o arquivo ficar vazio, apague-o.
+4. Apague os dados internos em `.git/modules/libs/matematica`.
+5. Faça o commit com `git add .gitmodules` e `git commit -m "chore: remove submódulo matematica"`.
+6. Confirme com `git status` que o diretório está limpo e que `main.c` ainda existe.
+
+:::danger
+Remover um submódulo apaga os arquivos da biblioteca do seu projeto. Antes, confirme que todos os commits da biblioteca estão publicados no repositório dela.
+:::
+
+<details>
+<summary>💡 Ver Resolução / Gabarito</summary>
+
+```bash
+git submodule deinit -f libs/matematica
+git rm -f libs/matematica
+git config -f .gitmodules --remove-section submodule.libs/matematica
+rm -rf .git/modules/libs/matematica
+
+git add .gitmodules
+git commit -m "chore: remove submódulo matematica"
+git status
+```
+
+Observação: `git submodule deinit` sozinho deixa a pasta vazia e o registro ativo. A remoção completa exige os passos 2 a 4.
+
+</details>
+
